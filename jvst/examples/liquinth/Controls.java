@@ -2,10 +2,10 @@
 package jvst.examples.liquinth;
 
 public interface Controls {
-	public int get_num_controllers();
-	public String get_controller_name( int control );
-	public int get_controller( int controller );
-	public void set_controller( int controller, int value );
-	public void set_mod_wheel( int value );
-	public void set_pitch_wheel( int value );
+	public int getNumControllers();
+	public String getControllerName( int control );
+	public int getController( int controller );
+	public void setController( int controller, int value );
+	public void setModWheel( int value );
+	public void setPitchWheel( int value );
 }

@@ -2,74 +2,74 @@
 package jvst.examples.liquinth;
 
 public class Envelope {
-	private boolean key_is_on;
-	private int tick_len, amplitude;
-	private int attack_len, attack_delta;
-	private int release_len, release_delta;
+	private boolean keyIsOn;
+	private int tickLen, amplitude;
+	private int attackLen, attackDelta;
+	private int releaseLen, releaseDelta;
 
-	public Envelope( int sampling_rate ) {
-		tick_len = sampling_rate / 1000;
-		set_attack_time( 0 );
-		set_release_time( 0 );
+	public Envelope( int samplingRate ) {
+		tickLen = samplingRate / 1000;
+		setAttackTime( 0 );
+		setReleaseTime( 0 );
 	}
 
-	public void set_attack_time( int millis ) {
-		attack_len = 0;
-		attack_delta = 0;
+	public void setAttackTime( int millis ) {
+		attackLen = 0;
+		attackDelta = 0;
 		if( millis > 0 ) {
-			attack_len = tick_len * millis;
-			attack_delta = ( Maths.FP_ONE << Maths.FP_SHIFT ) / attack_len;
+			attackLen = tickLen * millis;
+			attackDelta = ( Maths.FP_ONE << Maths.FP_SHIFT ) / attackLen;
 		}
 	}
 
-	public void set_release_time( int millis ) {
-		release_len = 0;
-		release_delta = 0;
+	public void setReleaseTime( int millis ) {
+		releaseLen = 0;
+		releaseDelta = 0;
 		if( millis > 0 ) {
-			release_len = tick_len * millis;
-			release_delta = ( Maths.FP_ONE << Maths.FP_SHIFT ) / release_len;
+			releaseLen = tickLen * millis;
+			releaseDelta = ( Maths.FP_ONE << Maths.FP_SHIFT ) / releaseLen;
 		}
 	}
 
-	public boolean key_is_on() {
-		return key_is_on;
+	public boolean keyIsOn() {
+		return keyIsOn;
 	}
 
-	public void key_on() {
-		key_is_on = true;
-		if( attack_len <= 0 ) {
+	public void keyOn() {
+		keyIsOn = true;
+		if( attackLen <= 0 ) {
 			amplitude = Maths.FP_ONE << Maths.FP_SHIFT;
 		}
 	}
 
-	public void key_off( boolean silence ) {
-		key_is_on = false;
-		if( release_len <= 0 || silence ) {
+	public void keyOff( boolean silence ) {
+		keyIsOn = false;
+		if( releaseLen <= 0 || silence ) {
 			amplitude = 0;
 		}
 	}
 
-	public int get_amplitude() {
+	public int getAmplitude() {
 		return amplitude >> Maths.FP_SHIFT;
 	}
 
 	public void update( int length ) {
-		int max_amplitude;
-		if( key_is_on ) { /* Attack */
-			max_amplitude = Maths.FP_ONE << Maths.FP_SHIFT;
-			if( length >= attack_len ) {
-				amplitude = max_amplitude;
+		int maxAmplitude;
+		if( keyIsOn ) { /* Attack */
+			maxAmplitude = Maths.FP_ONE << Maths.FP_SHIFT;
+			if( length >= attackLen ) {
+				amplitude = maxAmplitude;
 			} else {
-				amplitude += length * attack_delta;
-				if( amplitude > max_amplitude ) {
-					amplitude = max_amplitude;
+				amplitude += length * attackDelta;
+				if( amplitude > maxAmplitude ) {
+					amplitude = maxAmplitude;
 				}
 			}
 		} else { /* Release */
-			if( length >= release_len ) {
+			if( length >= releaseLen ) {
 				amplitude = 0;
 			} else {
-				amplitude -= length * release_delta;
+				amplitude -= length * releaseDelta;
 				if( amplitude < 0 ) {
 					amplitude = 0;
 				}

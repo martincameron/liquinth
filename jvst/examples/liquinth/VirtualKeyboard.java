@@ -53,58 +53,58 @@ public class VirtualKeyboard implements KeyListener {
 	};
 
 	private Keyboard keyboard;
-	private int[] key_status;
+	private int[] keyStatus;
 	private int octave;
 
 	public VirtualKeyboard( Keyboard kb ) {
 		keyboard = kb;
-		key_status = new int[ keys.length ];
+		keyStatus = new int[ keys.length ];
 		octave = 4;
 	}
 
-	private int get_key( int key_code ) {
+	private int getKey( int keyCode ) {
 		int key, idx;
 		key = -1;
 		for( idx = 0; idx < keys.length; idx++ ) {
-			if( keys[ idx ] == key_code ) {
+			if( keys[ idx ] == keyCode ) {
 				key = idx;
 			}
 		}
 		return key;
 	}
 
-	private void all_notes_off( boolean silence ) {
+	private void allNotesOff( boolean silence ) {
 		int idx;
-		keyboard.all_notes_off( silence );
-		for( idx = 0; idx < key_status.length; idx++ ) {
-			key_status[ idx ] = 0;
+		keyboard.allNotesOff( silence );
+		for( idx = 0; idx < keyStatus.length; idx++ ) {
+			keyStatus[ idx ] = 0;
 		}
 	}
 
 	public void keyPressed( KeyEvent ke ) {
 		int key;
-		key = get_key( ke.getKeyCode() );
+		key = getKey( ke.getKeyCode() );
 		if( key >= 10 ) { /* Note */
-			if( key_status[ key ] == 0 ) {
-				keyboard.note_on( octave * 12 + key - 10, 127 );
-				key_status[ key ] = 1;
+			if( keyStatus[ key ] == 0 ) {
+				keyboard.noteOn( octave * 12 + key - 10, 127 );
+				keyStatus[ key ] = 1;
 			}
 		} else if( key >= 2 ) {
 			/* Set Octave */
 			octave = key - 2;
-			all_notes_off( false );
+			allNotesOff( false );
 		} else if( key >= 0 ) {
 			/* If space, release all, if enter, silence all.*/
-			all_notes_off( key == 0 );
+			allNotesOff( key == 0 );
 		}
 	}
 
 	public void keyReleased( KeyEvent ke ) {
 		int key;
-		key = get_key( ke.getKeyCode() );
+		key = getKey( ke.getKeyCode() );
 		if( key >= 10 ) { /* Note */
-			keyboard.note_on( octave * 12 + key - 10, 0 );
-			key_status[ key ] = 0;
+			keyboard.noteOn( octave * 12 + key - 10, 0 );
+			keyStatus[ key ] = 0;
 		}
 	}
 

@@ -20,23 +20,23 @@ package jvst.examples.liquinth;
 public class MoogFilter {
 	private static final float SCALE = 1f / 32768f;
 	
-	private float max_cutoff;
-	private float cutoff, cutoff_dest, resonance;
+	private float maxCutoff;
+	private float cutoff, cutoffDest, resonance;
 	private float i1, i2, i3, i4;
 	private float o1, o2, o3, o4;
 
-	public MoogFilter( float sampling_rate ) {
-		max_cutoff = 48000f / sampling_rate;
+	public MoogFilter( float samplingRate ) {
+		maxCutoff = 48000f / samplingRate;
 	}
 
-	public void set_cutoff( float cut ) {
-		cut = cut * max_cutoff;
+	public void setCutoff( float cut ) {
+		cut = cut * maxCutoff;
 		if( cut < 0f ) cut = 0f;
 		if( cut > 1f ) cut = 1f;
-		cutoff_dest = cut;
+		cutoffDest = cut;
 	}
 
-	public void set_resonance( float res ) {
+	public void setResonance( float res ) {
 		if( res < 0f ) res = 0f;
 		if( res > 4f ) res = 4f;
 		resonance = res;
@@ -44,12 +44,12 @@ public class MoogFilter {
 
 	public void filter( int[] buf, int length ) {
 		int idx, i, c, m, x;
-		float cutoff_delta, in, out, f1, f2, f4, fb, fk;
-		cutoff_delta = ( cutoff_dest - cutoff ) / length;
+		float cutoffDelta, in, out, f1, f2, f4, fb, fk;
+		cutoffDelta = ( cutoffDest - cutoff ) / length;
 		idx = 0;
 		while( idx < length ) {
 			in = buf[ idx ] * SCALE;
-			cutoff += cutoff_delta;
+			cutoff += cutoffDelta;
 			f1 = cutoff * 1.16f;
 			f2 = f1 * f1;
 			f4 = f2 * f2;

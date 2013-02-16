@@ -5,40 +5,40 @@ package jvst.examples.liquinth;
 	Low Frequency Oscillator ...
 */
 public class LFO {
-	private int tick_len, phase;
-	private int cycle_len, depth;
+	private int tickLen, phase;
+	private int cycleLen, depth;
 
-	public LFO( int sampling_rate ) {
-		tick_len = sampling_rate / 1000;
-		set_cycle_len( 1000 );
+	public LFO( int samplingRate ) {
+		tickLen = samplingRate / 1000;
+		setCycleLen( 1000 );
 	}
 
-	public int get_phase() {
+	public int getPhase() {
 		return phase;
 	}
 
-	public void set_phase( int ph ) {
+	public void setPhase( int ph ) {
 		phase = ph & ( Maths.FP_TWO - 1 );
 	}
 
-	public void set_cycle_len( int millis ) {
-		cycle_len = tick_len * millis;
+	public void setCycleLen( int millis ) {
+		cycleLen = tickLen * millis;
 	}
 
-	public int get_depth() {
+	public int getDepth() {
 		return depth;
 	}
 
-	public void set_depth( int dep ) {
+	public void setDepth( int dep ) {
 		depth = dep & Maths.FP_MASK;
 	}
 
-	public int get_amplitude() {
+	public int getAmplitude() {
 		return Maths.sine( phase ) * depth >> Maths.FP_SHIFT;
 	}
 
 	public void update( int length ) {
-		phase += Maths.FP_TWO * length / cycle_len;
+		phase += Maths.FP_TWO * length / cycleLen;
 		phase &= Maths.FP_TWO - 1;
 	}
 }

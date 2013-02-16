@@ -28,19 +28,19 @@ public class AudioSelector extends JPanel {
 		add( combo, gbc );
 
 		this.player = player;
-		set_mixer( ( Mixer.Info ) combo.getSelectedItem() );
+		setMixer( ( Mixer.Info ) combo.getSelectedItem() );
 	}
 
-	private void set_mixer( Mixer.Info mixer_info ) {
+	private void setMixer( Mixer.Info mixerInfo ) {
 		player.stop();
-		player.set_mixer( AudioSystem.getMixer( mixer_info ) );
+		player.setMixer( AudioSystem.getMixer( mixerInfo ) );
 		new Thread( player ).start();
 	}
 
 	private class ComboListener implements ItemListener {
 		public void itemStateChanged( ItemEvent e ) {
 			if( e.getStateChange() == ItemEvent.SELECTED ) {
-				set_mixer( ( Mixer.Info ) e.getItem() );
+				setMixer( ( Mixer.Info ) e.getItem() );
 			}
 		}
 	}
