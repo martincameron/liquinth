@@ -1,17 +1,15 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a32";
-	public static final String AUTHOR = "(c)2008 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20080720;
+	public static final String VERSION = "Liquinth a36";
+	public static final String AUTHOR = "(c)2009 mumart@gmail.com";
+	public static final int RELEASE_DATE = 20090916;
 
 	private static final int
 		LOG2_NUM_VOICES = 3,
 		NUM_VOICES = 1 << LOG2_NUM_VOICES,
-		NUM_CONTROLLERS = 6,
-		OVERSAMPLE = 4,
-		FIR_COEFFS = 15;
+		NUM_CONTROLLERS = 6;
 
 	private static final String[] control_names = new String[] {
 		"Overdrive",
@@ -22,21 +20,13 @@ public class Liquinth implements Synthesizer, AudioSource {
 		"Portamento Speed"
 	};
 
-	private static final short[] fir_coeffs = new short[] {
-		  -4,  -34,  -66,  175, 1289,
-		3584, 6193, 7373, 6193, 3584,
-		1289,  175,  -66,  -34,   -4
-	};
-
-	private int[] fir_buf;
 	private MoogFilter filter;
 	private Envelope filter_env;
 	private Voice[] voices;
 	private byte[] key_status, controllers;
 
 	public Liquinth( int sampling_rate ) {
-		fir_buf = new int[ FIR_COEFFS ];
-		filter = new MoogFilter();
+		filter = new MoogFilter( sampling_rate );
 		voices = new Voice[ NUM_VOICES ];
 		key_status = new byte[ 128 ];
 		controllers = new byte[ get_num_controllers() ];
@@ -49,7 +39,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 		int idx;
 		filter_env = new Envelope( sampling_rate );
 		for( idx = 0; idx < NUM_VOICES; idx++ ) {
-			voices[ idx ] = new Voice( sampling_rate * OVERSAMPLE );
+			voices[ idx ] = new Voice( sampling_rate );
 			voices[ idx ].key_on( idx );
 		}
 		all_notes_off( true );
@@ -74,31 +64,19 @@ public class Liquinth implements Synthesizer, AudioSource {
 	}
 
 	public int[] allocate_mix_buf( int frames ) {
-		return new int[ frames * OVERSAMPLE + FIR_COEFFS ];
+		return new int[ frames ];
 	}
 
 	public synchronized void get_audio( int[] out_buf, int length ) {
-		int idx, input_len, input_ep1;
-		int cutoff, alevel;
-		/* Copy samples from previous invocation for downsampling filter.*/
-		for( idx = 0; idx < FIR_COEFFS; idx++ ) {
-			out_buf[ idx ] = fir_buf[ idx ];
-		}
-		input_len = length * OVERSAMPLE;
+		int idx, cutoff, alevel;
 		/* Clear mix buffer.*/
-		input_ep1 = FIR_COEFFS + input_len;
-		for( idx = FIR_COEFFS; idx < input_ep1; idx++ ) {
+		for( idx = 0; idx < length; idx++ ) {
 			out_buf[ idx ] = 0;
 		}
 		/* Get audio from voices. */
 		for( idx = 0; idx < NUM_VOICES; idx++ ) {
-			voices[ idx ].get_audio( out_buf, FIR_COEFFS, input_len );
+			voices[ idx ].get_audio( out_buf, 0, length );
 		}
-		/* Store end samples for next invocation.*/
-		for( idx = 0; idx < FIR_COEFFS; idx++ ) {
-			fir_buf[ idx ] = out_buf[ input_len + idx ];
-		}
-		downsample( out_buf, length );
 		/* Handle filter envelope.*/
 		cutoff = ( controllers[ 1 ] + 1 ) << Maths.FP_SHIFT - 7;
 		alevel = controllers[ 3 ] << Maths.FP_SHIFT - 7;
@@ -209,9 +187,8 @@ public class Liquinth implements Synthesizer, AudioSource {
 	}
 
 	public synchronized int get_controller( int controller ) {
-		int value;
-		value = 0;
-		if( controller >= 0 && controller < NUM_CONTROLLERS ) {
+		int value = 0;
+		if( controller >= 0 && controller < controllers.length ) {
 			return controllers[ controller ];
 		}
 		return value;
@@ -228,8 +205,9 @@ public class Liquinth implements Synthesizer, AudioSource {
 		controllers[ controller ] = ( byte ) value;
 		switch( controller ) {
 			case 0:
+				/* Logarithmic preamp from 1/NUM_VOICES to 2 */
 				value = value << Maths.FP_SHIFT - 7;
-				value = Maths.exp_scale( value, LOG2_NUM_VOICES );
+				value = Maths.exp_scale( value, LOG2_NUM_VOICES + 1 ) << 1;
 				for( idx = 0; idx < NUM_VOICES; idx++ ) {
 					voices[ idx ].set_volume( value );
 				}
@@ -283,17 +261,15 @@ public class Liquinth implements Synthesizer, AudioSource {
 		}
 	}
 
-	private void downsample( int[] buf, int num_output ) {
-		int idx, in_idx, out_idx, out;
-		in_idx = out_idx = 0;
-		while( out_idx < num_output ) {
-			out = 0;
-			for( idx = 0; idx < FIR_COEFFS; idx++ ) {
-				out += buf[ in_idx + idx ] * fir_coeffs[ idx ] >> Maths.FP_SHIFT;
-			}
-			buf[ out_idx++ ] = out;
-			in_idx += OVERSAMPLE;
+	private static int downsample( int s, int[] buffer, int len ) {
+		// Convolve with kernel ( 0.25, 0.5, 0.25 ).
+		// Filter envelope is Sin^2( PI * f ) / ( PI * f )^2 where fs = 1.0.
+		for( int in = 0, out = 0; in < len; in += 2, out += 1 ) {
+			int a = s + ( buffer[ in ] >> 1 );
+			s = buffer[ in + 1 ] >> 2;
+			buffer[ out ] = a + s;
 		}
+		return s;
 	}
 }
 

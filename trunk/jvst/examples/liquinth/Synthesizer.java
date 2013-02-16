@@ -1,5 +1,5 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 public interface Synthesizer extends Keyboard, Controls {
 /*
