@@ -10,26 +10,26 @@ public class LiquinthVST extends VSTPluginAdapter {
 		MIX_BUF_FRAMES = 1024;
 
 	private Synthesizer synthesizer;
-	private AudioSource audio_source;
-	private MidiReceiver midi_receiver;
+	private AudioSource audioSource;
+	private MidiReceiver midiReceiver;
 	private Program[] programs;
-	private int current_program;
-	private int[] mix_buf;
+	private int currentProgram;
+	private int[] mixBuf;
 
 	public LiquinthVST( long wrapper ) {
 		super( wrapper );
 		
 		Liquinth liquinth = new Liquinth( 48000 );
 		synthesizer = liquinth;
-		audio_source = liquinth;
-		midi_receiver = new MidiReceiver( synthesizer );
+		audioSource = liquinth;
+		midiReceiver = new MidiReceiver( synthesizer );
 
 		programs = new Program[ NUM_PROGRAMS ];
-		for( int prg_idx = 0; prg_idx < NUM_PROGRAMS; prg_idx++ ) {
-			programs[ prg_idx ] = new Program( "Blank " + prg_idx, synthesizer );
+		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
+			programs[ prgIdx ] = new Program( "Blank " + prgIdx, synthesizer );
 		}
 
-		mix_buf = audio_source.allocate_mix_buf( MIX_BUF_FRAMES );
+		mixBuf = audioSource.allocateMixBuf( MIX_BUF_FRAMES );
 		
 		setNumInputs( 0 );
 		setNumOutputs( 1 );
@@ -40,17 +40,17 @@ public class LiquinthVST extends VSTPluginAdapter {
 		suspend();
 	}
 
-	public SynthesizerPanel init_gui() {
+	public SynthesizerPanel initGui() {
 		synthesizer = new SynthesizerPanel( synthesizer );
-		midi_receiver = new MidiReceiver( synthesizer );
-		for( int prg_idx = 0; prg_idx < NUM_PROGRAMS; prg_idx++ ) {
-			programs[ prg_idx ].set_controls( synthesizer );
+		midiReceiver = new MidiReceiver( synthesizer );
+		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
+			programs[ prgIdx ].setControls( synthesizer );
 		}
 		return ( SynthesizerPanel ) synthesizer;
 	}
 	
-	private void set_controller( int ctrl_idx, int value ) {
-		synthesizer.set_controller( ctrl_idx, value );
+	private void setController( int ctrlIdx, int value ) {
+		synthesizer.setController( ctrlIdx, value );
 	}
 
 	/* Deprecated as of VST 2.4 */
@@ -58,31 +58,31 @@ public class LiquinthVST extends VSTPluginAdapter {
 		wantEvents( 1 );
 	}
 
-	public void setSampleRate( float sample_rate ) {
-		audio_source.set_sampling_rate( ( int ) sample_rate );
+	public void setSampleRate( float sampleRate ) {
+		audioSource.setSamplingRate( ( int ) sampleRate );
 	}
 
 	public void setProgram( int index ) {
 		if( index < 0 || index >= NUM_PROGRAMS ) return;
-		programs[ current_program ].store();
-		current_program = index;
-		programs[ current_program ].load();
+		programs[ currentProgram ].store();
+		currentProgram = index;
+		programs[ currentProgram ].load();
 	}
 
 	public void setParameter( int index, float value ) {
-		set_controller( index, ( int ) Math.round( value * 127 ) );
+		setController( index, ( int ) Math.round( value * 127 ) );
 	}
 
 	public float getParameter( int index ) {
-		return synthesizer.get_controller( index ) / 127f;
+		return synthesizer.getController( index ) / 127f;
 	}
 
 	public void setProgramName( String name ) {
-		programs[ current_program ].name = name;
+		programs[ currentProgram ].name = name;
 	}
 
 	public String getProgramName() {
-		return programs[ current_program ].name;
+		return programs[ currentProgram ].name;
 	}
 
 	public String getParameterLabel( int index ) {
@@ -94,7 +94,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public String getParameterName( int index ) {
-		return synthesizer.get_controller_name( index );
+		return synthesizer.getControllerName( index );
 	}
 
 	public VSTPinProperties getOutputProperties( int index ) {
@@ -113,9 +113,9 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	/* Deprecated as of VST 2.4 */
-	public boolean copyProgram( int dest_idx ) {
-		if( dest_idx < 0 || dest_idx >= NUM_PROGRAMS ) return false;
-		programs[ dest_idx ] = new Program( programs[ current_program ] );
+	public boolean copyProgram( int destIdx ) {
+		if( destIdx < 0 || destIdx >= NUM_PROGRAMS ) return false;
+		programs[ destIdx ] = new Program( programs[ currentProgram ] );
 		return true;
 	}
 
@@ -136,7 +136,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public int getNumParams() {
-		return synthesizer.get_num_controllers();
+		return synthesizer.getNumControllers();
 	}
 
 	public boolean setBypass( boolean value ) {
@@ -144,7 +144,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public int getProgram() {	
-		return current_program;
+		return currentProgram;
 	}
 
 	public int getPlugCategory() {
@@ -161,8 +161,8 @@ public class LiquinthVST extends VSTPluginAdapter {
 
 	public boolean string2Parameter( int index, String value ) {
 		try {
-			float float_value = Float.parseFloat( value );
-			setParameter( index, float_value );
+			float floatValue = Float.parseFloat( value );
+			setParameter( index, floatValue );
 		} catch( Exception e ) {
 			return false;
 		}
@@ -172,14 +172,14 @@ public class LiquinthVST extends VSTPluginAdapter {
 	/* Deprecated as of VST 2.4 */
 	public void process( float[][] inputs, float[][] outputs, int frames ) {
 		float[] output = outputs[ 0 ];
-		int out_idx = 0;
+		int outIdx = 0;
 		while( frames > 0 ) {
 			int length = frames;
 			if( length > MIX_BUF_FRAMES ) length = MIX_BUF_FRAMES;
-			audio_source.get_audio( mix_buf, length );
-			for( int mix_idx = 0; mix_idx < length; mix_idx++ ) {
-				float out = mix_buf[ mix_idx ];
-				output[ out_idx++ ] += out * 0.00003f; 
+			audioSource.getAudio( mixBuf, length );
+			for( int mixIdx = 0; mixIdx < length; mixIdx++ ) {
+				float out = mixBuf[ mixIdx ];
+				output[ outIdx++ ] += out * 0.00003f; 
 			}
 			frames -= length;
 		}
@@ -187,26 +187,26 @@ public class LiquinthVST extends VSTPluginAdapter {
 
 	public void processReplacing( float[][] inputs, float[][] outputs, int frames ) {
 		float[] output = outputs[ 0 ];
-		int out_idx = 0;
+		int outIdx = 0;
 		while( frames > 0 ) {
 			int length = frames;
 			if( length > MIX_BUF_FRAMES ) length = MIX_BUF_FRAMES;
-			audio_source.get_audio( mix_buf, length );
-			for( int mix_idx = 0; mix_idx < length; mix_idx++ ) {
-				float out = mix_buf[ mix_idx ];
-				output[ out_idx++ ] = out * 0.00003f; 
+			audioSource.getAudio( mixBuf, length );
+			for( int mixIdx = 0; mixIdx < length; mixIdx++ ) {
+				float out = mixBuf[ mixIdx ];
+				output[ outIdx++ ] = out * 0.00003f; 
 			}
 			frames -= length;
 		}
 	}
 
-	public int processEvents( VSTEvents vst_events ) {
-		VSTEvent[] events = vst_events.getEvents();
-		int num_events = vst_events.getNumEvents();
-		for( int ev_idx = 0; ev_idx < num_events; ev_idx++ ) {
-			VSTEvent event = events[ ev_idx ];
+	public int processEvents( VSTEvents vstEvents ) {
+		VSTEvent[] events = vstEvents.getEvents();
+		int numEvents = vstEvents.getNumEvents();
+		for( int evIdx = 0; evIdx < numEvents; evIdx++ ) {
+			VSTEvent event = events[ evIdx ];
 			if( event.getType() == VSTEvent.VST_EVENT_MIDI_TYPE ) {
-				midi_receiver.send( ( ( VSTMidiEvent ) event ).getData() );
+				midiReceiver.send( ( ( VSTMidiEvent ) event ).getData() );
 			}
 		}
 		return 1;
@@ -220,8 +220,8 @@ class Program {
 	
 	public Program( String name, Controls controls ) {
 		this.name = name;
-		controllers = new int[ controls.get_num_controllers() ];
-		set_controls( controls );
+		controllers = new int[ controls.getNumControllers() ];
+		setControls( controls );
 		store();
 	}
 	
@@ -236,18 +236,18 @@ class Program {
 	
 	public void load() {
 		for( int idx = 0; idx < controllers.length; idx++ ) {
-			controls.set_controller( idx, controllers[ idx ] );
+			controls.setController( idx, controllers[ idx ] );
 		}		
 	}
 	
 	public void store() {
 		for( int idx = 0; idx < controllers.length; idx++ ) {
-			controllers[ idx ] = controls.get_controller( idx );
+			controllers[ idx ] = controls.getController( idx );
 		}
 	}
 	
-	public void set_controls( Controls controls ) {
-		if( controls.get_num_controllers() != controllers.length ) {
+	public void setControls( Controls controls ) {
+		if( controls.getNumControllers() != controllers.length ) {
 			throw new IllegalArgumentException( "Number of controllers differ." );
 		}
 		this.controls = controls;

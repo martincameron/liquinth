@@ -10,20 +10,21 @@ public class Maths {
 	public static final int FP_ONE = 1 << FP_SHIFT;
 	public static final int FP_TWO = 2 << FP_SHIFT;
 	public static final int FP_MASK = FP_ONE - 1;
+	public static final int PI = 31416 * FP_ONE / 10000;
 
 	private static final int TABLE_ACCURACY = 4;
 
-	private static final int[] log2_table = {
+	private static final int[] log2Table = {
 		    0,  2866,  5568,  8124, 10549, 12855, 15055, 17156, 19168,
 		21098, 22952, 24736, 26455, 28114, 29717, 31267, 32768, 32768
 	};
 
-	private static final int[] exp2_table = {
+	private static final int[] exp2Table = {
 		32768, 34219, 35734, 37316, 38968, 40693, 42495, 44376, 46341,
 		48393, 50535, 52773, 55109, 57549, 60097, 62757, 65536, 65536
 	};
 
-	private static final int[] sine_table = {
+	private static final int[] sineTable = {
 		    0,  6393, 12540, 18205, 23170, 27246, 30274, 32138, 32768,
 		32138, 30274, 27246, 23170, 18205, 12540,  6393,     0,     0
 	};
@@ -43,7 +44,7 @@ public class Maths {
 			x >>= 1;
 			shift++;
 		}
-		return ( FP_ONE * shift ) + interpolate_table( log2_table, x - FP_ONE );
+		return ( FP_ONE * shift ) + interpolateTable( log2Table, x - FP_ONE );
 	}
 
 	/*
@@ -51,7 +52,7 @@ public class Maths {
 	*/
 	public static int exp2( int x ) {
 		int y;
-		y = interpolate_table( exp2_table, x & FP_MASK ) << FP_SHIFT;
+		y = interpolateTable( exp2Table, x & FP_MASK ) << FP_SHIFT;
 		return y >> FP_SHIFT - ( x >> FP_SHIFT );
 	}
 
@@ -60,7 +61,7 @@ public class Maths {
 	*/
 	public static int sine( int x ) {
 		int y;
-		y = interpolate_table( sine_table, x & FP_MASK );
+		y = interpolateTable( sineTable, x & FP_MASK );
 		if( ( x & FP_ONE ) != 0 ) {
 			y = -y;
 		}
@@ -72,15 +73,15 @@ public class Maths {
 		to an exponential scale from FP_ONE/2^n -> FP_ONE,
 		which doubles every FP_ONE/n.
 	*/
-	public static int exp_scale( int x, int n ) {
+	public static int expScale( int x, int n ) {
 		return exp2( x * n ) >> n;
 	}
 
-	private static int interpolate_table( int[] table, int x ) {
-		int tab_idx, c, m;
-		tab_idx = x >> FP_SHIFT - TABLE_ACCURACY;
-		c = table[ tab_idx ];
-		m = table[ tab_idx + 1 ] - c;
+	private static int interpolateTable( int[] table, int x ) {
+		int tabIdx, c, m;
+		tabIdx = x >> FP_SHIFT - TABLE_ACCURACY;
+		c = table[ tabIdx ];
+		m = table[ tabIdx + 1 ] - c;
 		m = m * ( x & ( FP_MASK >> TABLE_ACCURACY ) );
 		return c + ( m >> FP_SHIFT - TABLE_ACCURACY );
 	}

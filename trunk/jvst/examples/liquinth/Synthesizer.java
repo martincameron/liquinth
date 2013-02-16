@@ -3,13 +3,13 @@ package jvst.examples.liquinth;
 
 public interface Synthesizer extends Keyboard, Controls {
 /*
-	public void note_on( int key, int velocity );
-	public void all_notes_off( boolean sound_off );
-	public int get_num_controllers();
-	public String get_controller_name( int control );
-	public int get_controller( int controller );
-	public void set_controller( int controller, int value );
-	public void set_mod_wheel( int value );
-	public void set_pitch_wheel( int value );
+	public void noteOn( int key, int velocity );
+	public void allNotesOff( boolean soundOff );
+	public int getNumControllers();
+	public String getControllerName( int control );
+	public int getController( int controller );
+	public void setController( int controller, int value );
+	public void setModWheel( int value );
+	public void setPitchWheel( int value );
 */
 }

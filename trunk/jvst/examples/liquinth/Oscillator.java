@@ -1,100 +1,116 @@
 
 package jvst.examples.liquinth;
 
-public class Oscillator {	
-	private static final int NUM_TABLES = 8;
-	private static final int A8_TABLE_PARTS = 6;
-	private static final int A5_TABLE_INDEX = 3;
+public class Oscillator {
+	private static final int NUM_TABLES = 9;
+	private static final int TABLE_0_PARTIALS = 768;
 	private static final int WAVE_LEN = 1 << 11;
 	private static final int WAVE_MASK = WAVE_LEN - 1;
 	private static final int PHASE_MASK = ( WAVE_LEN << Maths.FP_SHIFT ) - 1;
 
-	private static short[][] saw_table, sqr_table;
+	private static short[][] oddHarmonics, evenHarmonics;
 
-	private int a5_pitch, waveform, table, phase;
-	private int ampl_1, ampl_2, step_1, step_2;
+	private int a5Pitch, evnAmp, minTab, pulseWidth;
+	private int ampl1, ampl2, pitch1, pitch2, phase;
 
-	public Oscillator( int sampling_rate ) {
-		if( saw_table == null ) saw_table = wavetable( true );
-		if( sqr_table == null ) sqr_table = wavetable( false );
-		int a5_step = 440 * ( ( WAVE_LEN << Maths.FP_SHIFT ) / sampling_rate );
-		a5_pitch = Maths.log2( a5_step );
+	public Oscillator( int samplingRate ) {
+		int a5Step = 440 * ( ( WAVE_LEN << Maths.FP_SHIFT ) / samplingRate );
+		a5Pitch = Maths.log2( a5Step );
 	}
 
-	public void set_wave( int wave ) {
-		waveform = wave & Maths.FP_MASK;
+	/* Set the level of the even harmonics from 0 (square) to Maths.FP_ONE (sawtooth). */
+	public void setEvenHarmonics( int level ) {
+		evnAmp = level;
 	}
 
-	public void set_amplitude( int amplitude, boolean now ) {
-		ampl_2 = amplitude;
-		if( now ) ampl_1 = ampl_2;
+	/* Pulse width is halved every increase of Maths.FP_ONE. Zero is full width. */
+	public void setPulseWidth( int width ) {
+		pulseWidth = width;
+	}
+
+	/* Set the harmonic complexity of the oscillator. */
+	public void setComplexity( int value ) {
+		minTab = NUM_TABLES - 1 - ( ( value * NUM_TABLES ) >> Maths.FP_SHIFT );
+	}
+
+	public void setAmplitude( int amplitude, boolean now ) {
+		ampl2 = amplitude;
+		if( now ) ampl1 = ampl2;
 	}
 
 	/* Pitch is in octaves relative to 440hz (A5)*/
-	public void set_pitch( int pitch, boolean now ) {
-		table = A5_TABLE_INDEX - ( pitch >> Maths.FP_SHIFT );
-		if( table < 0 ) table = 0;
-		if( table >= NUM_TABLES ) table = NUM_TABLES - 1;
-		step_2 = Maths.exp2( a5_pitch + pitch );
-		if( now ) step_1 = step_2;
+	public void setPitch( int pitch, boolean now ) {
+		pitch2 = pitch;
+		if( now ) pitch1 = pitch2;
 	}
 
-	public int get_phase() {
+	public int getPhase() {
 		return phase;
 	}
 
-	public void set_phase( int phase ) {
+	public void setPhase( int phase ) {
 		this.phase = phase & PHASE_MASK;
 	}
-	
-	public void get_audio( int[] out_buf, int offset, int length ) {	
-		int step = step_1;
-		int dstp = ( step_2 - step_1 ) / length;
-		int ampl = ampl_1;
-		int damp = ( ampl_2 - ampl_1 ) / length;
 
-		int sqr_amp = waveform;
-		int saw_amp = Maths.FP_ONE - sqr_amp;
+	public void getAudio( int[] outBuf, int offset, int length ) {
+		int table = ( a5Pitch + pitch1 ) >> Maths.FP_SHIFT;
+		if( table < minTab ) table = minTab;
+		if( table >= NUM_TABLES ) table = NUM_TABLES - 1;
+		int step = Maths.exp2( a5Pitch + pitch1 + pulseWidth ) << 4;
+		int step2 = Maths.exp2( a5Pitch + pitch2 + pulseWidth ) << 4;
+		int dstp = ( step2 - step ) / length;
+		int ampl = ampl1 << 16;
+		int damp = ( ( ampl2 << 16 ) - ampl ) / length;
+		int cycleLen = WAVE_LEN * Maths.exp2( pulseWidth );
 		int phase = this.phase;
-		short[] saw_t = saw_table[ table ];
-		short[] sqr_t = sqr_table[ table ];
+		short[] oddTab = oddHarmonics[ table ];
+		short[] evnTab = evenHarmonics[ table ];
 		for( int end = offset + length; offset < end; offset++ ) {
 			int x = phase >> Maths.FP_SHIFT;
-			int saw = saw_t[ x ] * saw_amp >> Maths.FP_SHIFT;
-			int sqr = sqr_t[ x ] * sqr_amp >> Maths.FP_SHIFT;
-			out_buf[ offset ] += ( saw + sqr ) * ampl >> Maths.FP_SHIFT;
-			phase = ( phase + step ) & PHASE_MASK;
+			if( x < WAVE_LEN ) {
+				int y = oddTab[ x ] + ( ( evnTab[ x ] * evnAmp ) >> Maths.FP_SHIFT );
+				outBuf[ offset ] += ( y * ( ampl >> 16 ) ) >> Maths.FP_SHIFT;
+			}
+			phase = phase + ( step >> 4 );
+			while( phase >= cycleLen ) {
+				phase -= cycleLen;
+			}
 			ampl += damp;
 			step += dstp;
 		}
 		this.phase = phase;
-		step_1 = step_2;
-		ampl_1 = ampl_2;
+		ampl1 = ampl2;
+		pitch1 = pitch2;
 	}
-	
-	private static short[][] wavetable( boolean saw ) {
-		double[] buffer = new double[ WAVE_LEN ];
-		short[][] output = new short[ NUM_TABLES ][ WAVE_LEN ];
-		double[] sin = new double[ WAVE_LEN ];
+
+	static {
+		/* Generate sine table. */
+		short[] sine = new short[ WAVE_LEN ];
 		double t = 0, dt = 2 * Math.PI / WAVE_LEN;
 		for( int idx = 0; idx < WAVE_LEN; idx++, t += dt ) {
-			sin[ idx ] = Math.sin( t );
+			sine[ idx ] = ( short ) ( Math.sin( t ) * 27000 );
 		}
-		int inc = saw ? 1 : 2;
-		int part = 1, parts = A8_TABLE_PARTS;
-		for( int tab = 0; tab < NUM_TABLES; tab++, parts <<= 1 ) {
+		/* Generate odd/even harmonics with saw/square spectral envelope.*/
+		oddHarmonics = new short[ NUM_TABLES ][];
+		evenHarmonics = new short[ NUM_TABLES ][];
+		int parts = TABLE_0_PARTIALS;
+		for( int tab = 0; tab < NUM_TABLES; tab++ ) {
+			short[] odd = oddHarmonics[ tab ] = new short[ WAVE_LEN ];
+			short[] even = evenHarmonics[ tab ] = new short[ WAVE_LEN ];
+			int part = 1;
 			while( part <= parts ) {
-				double amp = 2.0 / ( Math.PI * part );
+				int amp = ( -Maths.FP_TWO << Maths.FP_SHIFT ) / ( -Maths.PI * part );
 				for( int idx = 0; idx < WAVE_LEN; idx++ ) {
-					buffer[ idx ] += sin[ ( idx * part ) & WAVE_MASK ] * amp;
+					odd[ idx ] += ( sine[ ( idx * part ) & WAVE_MASK ] * amp ) >> Maths.FP_SHIFT;
 				}
-				part += inc;
+				part++;
+				amp = ( -Maths.FP_TWO << Maths.FP_SHIFT ) / ( -Maths.PI * part );
+				for( int idx = 0; idx < WAVE_LEN; idx++ ) {
+					even[ idx ] += ( sine[ ( idx * part ) & WAVE_MASK ] * amp ) >> Maths.FP_SHIFT;
+				}
+				part++;
 			}
-			short[] out = output[ tab ];
-			for( int idx = 0; idx < WAVE_LEN; idx++ ) {
-				out[ idx ] = ( short ) ( buffer[ idx ] * 27000 );
-			}
+			parts >>= 1;
 		}
-		return output;
 	}
 }

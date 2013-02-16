@@ -9,21 +9,21 @@ public class LiquinthJS extends JPanel {
 	public LiquinthJS() {
 		Liquinth liquinth = new Liquinth( Player.SAMPLING_RATE );
 		Player player = new Player( liquinth );
-		AudioSelector audio_selector = new AudioSelector( player );
-		SynthesizerPanel synth_panel = new SynthesizerPanel( liquinth );
-		MidiReceiver midi_receiver = new MidiReceiver( synth_panel );
-		MidiSelector midi_selector = new MidiSelector( midi_receiver );
+		AudioSelector audioSelector = new AudioSelector( player );
+		SynthesizerPanel synthPanel = new SynthesizerPanel( liquinth );
+		MidiReceiver midiReceiver = new MidiReceiver( synthPanel );
+		MidiSelector midiSelector = new MidiSelector( midiReceiver );
 		GridBagConstraints gbc = new GridBagConstraints();
 		setLayout( new GridBagLayout() );
 		gbc.fill = GridBagConstraints.BOTH;
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		gbc.weightx = 1;
-		add( audio_selector, gbc );
-		add( midi_selector, gbc );
+		add( audioSelector, gbc );
+		add( midiSelector, gbc );
 		gbc.weighty = 1;
 		add( new LogoPanel(), gbc );
 		gbc.weighty = 0;
-		add( synth_panel, gbc );
+		add( synthPanel, gbc );
 		setBorder( new EmptyBorder( 6, 6, 6, 6 ) );
 	}
 

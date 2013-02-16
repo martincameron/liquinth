@@ -7,16 +7,16 @@ import javax.swing.*;
 import javax.sound.midi.*;
 
 public class MidiSelector extends JPanel {
-	private MidiReceiver midi_receiver;
-	private MidiDevice midi_device;
+	private MidiReceiver midiReceiver;
+	private MidiDevice midiDevice;
 
 	public MidiSelector( MidiReceiver receiver ) {
 		JComboBox combo;
 		GridBagLayout gbl;
 		GridBagConstraints gbc;
 
-		midi_receiver = receiver;
-		receiver.set_channel( 1 );
+		midiReceiver = receiver;
+		receiver.setChannel( 1 );
 
 		setLayout( new GridBagLayout() );
 		gbc = new GridBagConstraints();
@@ -48,20 +48,20 @@ public class MidiSelector extends JPanel {
 		public void itemStateChanged( ItemEvent e ) {
 			Object item;
 			if( e.getStateChange() == ItemEvent.SELECTED ) {
-				if( midi_device != null ) {
-					midi_device.close();
+				if( midiDevice != null ) {
+					midiDevice.close();
 				}
 				item = e.getItem();
 				if( item instanceof MidiDevice.Info ) {
 					try {
-						midi_device = MidiSystem.getMidiDevice( ( MidiDevice.Info ) item );
-						midi_device.open();
-						midi_device.getTransmitter().setReceiver( midi_receiver );
+						midiDevice = MidiSystem.getMidiDevice( ( MidiDevice.Info ) item );
+						midiDevice.open();
+						midiDevice.getTransmitter().setReceiver( midiReceiver );
 					} catch( MidiUnavailableException exception ) {
 						System.out.println( "MidiSelector: Can't open MIDI device!" );
 					}
 				} else {
-					midi_device = null;
+					midiDevice = null;
 				}
 			}
 		}
@@ -72,7 +72,7 @@ public class MidiSelector extends JPanel {
 			if( e.getStateChange() == ItemEvent.SELECTED ) {
 				Integer chan;
 				chan = ( Integer ) e.getItem();
-				midi_receiver.set_channel( chan.intValue() );
+				midiReceiver.setChannel( chan.intValue() );
 			}
 		}
 	}

@@ -1,5 +1,5 @@
 
-Liquinth a36 (c)2009 mumart@gmail.com
+Liquinth (c)2012 mumart@gmail.com
 
 Liquinth is a relatively simple polysynth for Java.
 It can be used either standalone from the JAR file,
@@ -8,6 +8,18 @@ or as a VST instrument via jVSTwRapper.
 Please let me know how you get on!
 
 Changes
+
+Version a41 has a few code improvements,
+but there should be no changes to the performance.
+
+Version a40 brings a pulse-width control (a simple
+implementation that is only really useful for bass
+sounds) and a "timbre" setting to control the number of
+harmonics in the waveform (basically just exposing the
+workings of the antialiasing algorithm). A couple of
+minor bugs in the volume/pitch interpolation have been
+fixed and the code has been made a little clearer in
+places.
 
 There have been substantial improvements since version a30.
 The oscillators are now multisampled, resulting in a much
