@@ -5,12 +5,10 @@ import javax.sound.midi.*;
 
 public class MidiReceiver implements Receiver {
 	private Synthesizer synthesizer;
-	private ControlPanel control_panel;
 	private int midi_channel;
 
-	public MidiReceiver( Synthesizer synth, ControlPanel control ) {
+	public MidiReceiver( Synthesizer synth ) {
 		synthesizer = synth;
-		control_panel = control;
 		set_channel( 1 );
 	}
 
@@ -21,10 +19,11 @@ public class MidiReceiver implements Receiver {
 	}
 
 	public void send( MidiMessage midi_msg, long time_stamp ) {
-		int idx, value;
-		int msg_status, msg_channel;
-		byte[] msg_data;
-		msg_data = midi_msg.getMessage();
+		send( midi_msg.getMessage() );
+	}
+
+	public void send( byte[] msg_data ) {
+		int ctrl_index, ctrl_value, msg_status, msg_channel;
 		msg_status = ( msg_data[ 0 ] & 0xF0 ) >> 4;
 		if( msg_status == 0xF ) {
 			/* Ignore system messages.*/
@@ -47,14 +46,21 @@ public class MidiReceiver implements Receiver {
 				/* Controller 120 = all sound off */
 				/* Controller 121 = reset all controllers */
 				/* Controller 123 = all notes off */
-				control_panel.set_controller( msg_data[ 1 ] & 0x7F, msg_data[ 2 ] & 0x7F );
+				ctrl_index = msg_data[ 1 ] & 0x7F;
+				ctrl_value = msg_data[ 2 ] & 0x7F;
+				if( ctrl_index == 1 ) {
+					// Modulation wheel
+					synthesizer.set_mod_wheel( ctrl_value );
+				} else {
+					synthesizer.set_controller( ctrl_index - 20, ctrl_value );
+				}
 				break;
 			case 0xC: /* Program change.*/
 				/* program = msg_data[ 1 ] & 0x7F; */
 				break;
 			case 0xE: /* Pitch wheel.*/
-				value = ( msg_data[ 1 ] & 0x7F ) | ( ( msg_data[ 2 ] & 0x7F ) << 7 );
-				synthesizer.set_pitch_wheel( value - 8192 );
+				ctrl_value = ( msg_data[ 1 ] & 0x7F ) | ( ( msg_data[ 2 ] & 0x7F ) << 7 );
+				synthesizer.set_pitch_wheel( ctrl_value - 8192 );
 				break;
 		}
 	}

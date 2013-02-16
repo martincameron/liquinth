@@ -34,8 +34,10 @@ public class MidiSelector extends JPanel {
 		gbc.weightx = 0;
 		add( new JLabel( "Channel" ), gbc );
 		combo = new JComboBox( new Integer[] {
-			1, 2, 3, 4, 5, 6, 7, 8,
-			9,10,11,12,13,14,15,16
+			new Integer(  1 ), new Integer(  2 ), new Integer(  3 ), new Integer(  4 ),
+			new Integer(  5 ), new Integer(  6 ), new Integer(  7 ), new Integer(  8 ),
+			new Integer(  9 ), new Integer( 10 ), new Integer( 11 ), new Integer( 12 ),
+			new Integer( 13 ), new Integer( 14 ), new Integer( 15 ), new Integer( 16 )	
 		} );
 		combo.addItemListener( new ChanComboListener() );
 		gbc.gridwidth = GridBagConstraints.REMAINDER;

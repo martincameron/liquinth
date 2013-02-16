@@ -5,20 +5,20 @@ import java.awt.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-public class ControlPanel extends JPanel {
+public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private Synthesizer synthesizer;
 	private JComboBox c1_assign_cb;
 	private JSlider[] controllers;
 
-	public ControlPanel( Synthesizer synth ) {
+	public SynthesizerPanel( Synthesizer synth ) {
 		int idx, num_controllers, value;
 		String control_name;
 		GridBagLayout gbl;
 		GridBagConstraints gbc;
-		Keyboard keyboard;
+		VirtualKeyboard keyboard;
 
 		synthesizer = synth;
-		keyboard = new Keyboard( synth );
+		keyboard = new VirtualKeyboard( synth );
 
 		gbl = new GridBagLayout();
 		setLayout( gbl );
@@ -29,7 +29,7 @@ public class ControlPanel extends JPanel {
 
 		gbc.weightx = 0;
 		gbc.gridwidth = 1;
-		add( new JLabel( "Midi Control 1" ), gbc );
+		add( new JLabel( "Modulation Wheel" ), gbc );
 		gbc.weightx = 1;
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		c1_assign_cb = new JComboBox();
@@ -52,14 +52,43 @@ public class ControlPanel extends JPanel {
 			add( controllers[ idx ], gbc );
 		}
 	}
-
-	public void set_controller( int controller, int value ) {
-		if( controller <= 1 ) {
-			controller = c1_assign_cb.getSelectedIndex() + 2;
-		}
-		controllers[ controller - 2 ].setValue( value );
+	
+	public void note_on( int key, int velocity ) {
+		synthesizer.note_on( key, velocity );
+	}
+	
+	public void all_notes_off( boolean sound_off ) {
+		synthesizer.all_notes_off( sound_off );
+	}
+	
+	public int get_num_controllers() {
+		return synthesizer.get_num_controllers();
+	}
+	
+	public String get_controller_name( int control ) {
+		return synthesizer.get_controller_name( control );
+	}
+	
+	public int get_controller( int controller ) {
+		return synthesizer.get_controller( controller );
+	}
+		
+	public void set_controller( final int controller, final int value ) {
+		SwingUtilities.invokeLater( new Runnable() {
+			public void run() {
+				controllers[ controller ].setValue( value );
+			}
+		} );
 	}
 
+	public void set_pitch_wheel( int value ) {
+		synthesizer.set_pitch_wheel( value );
+	}
+	
+	public void set_mod_wheel( int value ) {
+		set_controller( c1_assign_cb.getSelectedIndex(), value );
+	}
+	
 	private class SliderListener implements ChangeListener {
 		private int controller;
 
