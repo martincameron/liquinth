@@ -1,5 +1,5 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 public class Envelope {
 	private boolean key_is_on;

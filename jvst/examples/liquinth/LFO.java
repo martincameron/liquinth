@@ -1,5 +1,5 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 /*
 	Low Frequency Oscillator ...

@@ -1,5 +1,5 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 public interface AudioSource {
 	public void set_sampling_rate( int sampling_rate );

@@ -1,5 +1,5 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 public interface Controls {
 	public int get_num_controllers();

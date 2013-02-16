@@ -1,5 +1,5 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 import jvst.wrapper.*;
 import jvst.wrapper.valueobjects.*;

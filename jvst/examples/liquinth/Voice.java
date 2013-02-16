@@ -1,5 +1,5 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 public class Voice {
 	public static final int NUM_CONTROLLERS = 6;
@@ -14,7 +14,7 @@ public class Voice {
 
 	private Oscillator osc_1, osc_2;
 	private Envelope vol_env;
-	private LFO vib_lfo;
+	private LFO vib_lfo_1, vib_lfo_2;
 
 	private int tick_len, porta_time;
 	private int pitch, porta_pitch, porta_rate;
@@ -30,7 +30,8 @@ public class Voice {
 		osc_1 = new Oscillator( sampling_rate );
 		osc_2 = new Oscillator( sampling_rate );
 		vol_env = new Envelope( sampling_rate );
-		vib_lfo = new LFO( sampling_rate );
+		vib_lfo_1 = new LFO( sampling_rate );
+		vib_lfo_2 = new LFO( sampling_rate );
 		set_pitch_wheel( 0 );
 		for( idx = 0; idx < NUM_CONTROLLERS; idx++ ) {
 			set_controller( idx, 0 );
@@ -75,7 +76,8 @@ public class Voice {
 			} 
 		}
 		if( vol_env.get_amplitude() <= 0 ) {
-			vib_lfo.set_phase( 0 );
+			vib_lfo_1.set_phase( 0 );
+			vib_lfo_2.set_phase( 0 );
 		}
 		vol_env.key_on();
 		calculate_amplitude( true );
@@ -131,7 +133,7 @@ public class Voice {
 			case 3:
 				if( value <= 0 ) {
 					detune = 0;
-					if( vib_lfo.get_depth() <= 0 ) {
+					if( vib_lfo_1.get_depth() <= 0 ) {
 						/* Lock the oscillators together.*/
 						osc_2.set_phase( osc_1.get_phase() );
 						calculate_pitch( true );
@@ -144,11 +146,13 @@ public class Voice {
 			case 4:
 				value = 128 - value << Maths.FP_SHIFT - 7;
 				value = Maths.exp_scale( value, 11 );
-				vib_lfo.set_cycle_len( value );
+				vib_lfo_1.set_cycle_len( value );
+				vib_lfo_2.set_cycle_len( value * 99 / 70 );
 				break;
 			case 5:
 				if( value <= 0 ) {
-					vib_lfo.set_depth( 0 );
+					vib_lfo_1.set_depth( 0 );
+					vib_lfo_2.set_depth( 0 );
 					if( detune <= 0 ) {
 						osc_2.set_phase( osc_1.get_phase() );
 						calculate_pitch( true );
@@ -156,7 +160,8 @@ public class Voice {
 				} else {
 					value = value << Maths.FP_SHIFT - 7;
 					value = Maths.exp_scale( value, 8 );
-					vib_lfo.set_depth( value );
+					vib_lfo_1.set_depth( value );
+					vib_lfo_2.set_depth( value );
 				}
 				break;
 		}
@@ -164,7 +169,8 @@ public class Voice {
 
 	public void get_audio( int[] out_buf, int offset, int length ) {
 		int amplitude;
-		vib_lfo.update( length );
+		vib_lfo_1.update( length );
+		vib_lfo_2.update( length );
 		if( pitch < porta_pitch ) {
 			pitch = pitch + porta_rate * length / tick_len;
 			if( pitch > porta_pitch ) {
@@ -182,14 +188,13 @@ public class Voice {
 		calculate_amplitude( false );
 		osc_1.get_audio( out_buf, offset, length );
 		osc_2.get_audio( out_buf, offset, length );
-
 	}
 
 	private void calculate_pitch( boolean now ) {
-		int vibrato;
-		vibrato = vib_lfo.get_amplitude();
-		osc_1.set_pitch( pitch + pitch_wheel - vibrato, now );
-		osc_2.set_pitch( pitch + pitch_wheel + vibrato + detune, now );
+		int vibrato_1 = vib_lfo_1.get_amplitude();
+		int vibrato_2 = vib_lfo_2.get_amplitude();
+		osc_1.set_pitch( pitch + pitch_wheel + vibrato_1, now );
+		osc_2.set_pitch( pitch + pitch_wheel + vibrato_2 + detune, now );
 	}
 
 	private void calculate_amplitude( boolean now ) {

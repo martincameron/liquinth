@@ -1,5 +1,5 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 /*
 	All these numbers can become a bit confusing -

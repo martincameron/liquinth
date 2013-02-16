@@ -1,5 +1,5 @@
 
-package liquinth;
+package jvst.examples.liquinth;
 
 import java.awt.*;
 import javax.swing.*;
