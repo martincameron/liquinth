@@ -13,15 +13,15 @@ public class Player implements Runnable {
 	private static final int BUF_FRAMES = 1024;
 	private static final int BUF_BYTES = BUF_FRAMES * 2;
 
-	private Synthesizer synthesizer;
+	private AudioSource audio_source;
 	private AudioFormat audio_format;
 	private SourceDataLine.Info line_info;
 	private Mixer audio_mixer;
 
 	private boolean play, running;
 
-	public Player( Synthesizer synth ) {
-		synthesizer = synth;
+	public Player( AudioSource source ) {
+		audio_source = source;
 		audio_format = new AudioFormat( SAMPLING_RATE, 16, 1, true, false );
 		line_info = new DataLine.Info( SourceDataLine.class, audio_format, BUF_BYTES );
 	}
@@ -43,7 +43,7 @@ public class Player implements Runnable {
 			stop();
 		}
 		play = true;
-		mix_buf = Synthesizer.allocate_mix_buf( BUF_FRAMES );
+		mix_buf = audio_source.allocate_mix_buf( BUF_FRAMES );
 		out_buf = new byte[ BUF_BYTES ];
 		try {
 			audio_line = ( SourceDataLine ) audio_mixer.getLine( line_info );
@@ -56,7 +56,7 @@ public class Player implements Runnable {
 		running = true;
 		while( play ) {
 			out_idx = 0;
-			synthesizer.get_audio( mix_buf, BUF_FRAMES );
+			audio_source.get_audio( mix_buf, BUF_FRAMES );
 			for( mix_idx = 0; mix_idx < BUF_FRAMES; mix_idx++ ) {
 				out = mix_buf[ mix_idx ];
 				out_buf[ out_idx     ] = ( byte ) ( out & 0xFF );
