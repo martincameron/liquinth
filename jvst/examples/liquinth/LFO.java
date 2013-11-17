@@ -34,7 +34,7 @@ public class LFO {
 	}
 
 	public int getAmplitude() {
-		return Maths.sine( phase ) * depth >> Maths.FP_SHIFT;
+		return ( Maths.sine( phase ) * depth ) >> Maths.FP_SHIFT;
 	}
 
 	public void update( int length ) {
