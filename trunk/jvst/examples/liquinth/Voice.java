@@ -2,30 +2,13 @@
 package jvst.examples.liquinth;
 
 public class Voice {
-	public static final int NUM_CONTROLLERS = 8;
-	private static final String[] controlNames = new String[] {
-		"Waveform",
-		"Attack",
-		"Release",
-		"Detune",
-		"Vibrato Speed",
-		"Vibrato Depth",
-		"Pulse Width",
-		"Timbre"
-	};
-
-	private byte[] controllers = new byte[ NUM_CONTROLLERS ];
 	private Oscillator osc1, osc2;
 	private Envelope volEnv;
-	private LFO vibLfo1, vibLfo2;
+	private LFO lfo;
 
 	private int tickLen, portaTime;
 	private int pitch, portaPitch, portaRate;
 	private int volume, key, pitchWheel, detune;
-
-	public static String getControllerName( int controller ) {
-		return controlNames[ controller ];
-	}
 
 	public Voice( int samplingRate ) {
 		int idx;
@@ -33,19 +16,56 @@ public class Voice {
 		osc1 = new Oscillator( samplingRate );
 		osc2 = new Oscillator( samplingRate );
 		volEnv = new Envelope( samplingRate );
-		vibLfo1 = new LFO( samplingRate );
-		vibLfo2 = new LFO( samplingRate );
-		setPitchWheel( 0 );
-		for( idx = 0; idx < NUM_CONTROLLERS; idx++ ) {
-			setController( idx, 0 );
-		}
-		setPortamentoTime( 0 );
+		lfo = new LFO( samplingRate );
 		setVolume( Maths.FP_ONE );
 		keyOn( 60 ); /* Middle C.*/
 		keyOff( true );
 	}
 
-	/* Portamento speed in ms. */
+	public void setWaveform( int wave ) {
+		osc1.setEvenHarmonics( wave );
+		osc2.setEvenHarmonics( wave );
+	}
+	
+	public void setVolAttack( int millis ) {
+		volEnv.setAttackTime( millis );
+	}
+	
+	public void setVolSustain( int level ) {
+	}
+	
+	public void setVolRelease( int millis ) {
+		volEnv.setReleaseTime( millis );
+	}
+	
+	public void setOsc1Tuning( int octaves ) {
+	}
+
+	public void setOsc2Tuning( int octaves ) {
+		detune = 0;
+		if( octaves > 0 ) {
+			detune = Maths.expScale( octaves, 8 );
+		}
+	}
+	
+	public void setLFOSpeed( int millis ) {
+		lfo.setCycleLen( millis );
+	}
+	
+	public void setVibratoDepth( int octaves ) {
+		lfo.setDepth( octaves );
+	}
+	
+	public void setPulseWidth( int octaves ) {
+		osc1.setPulseWidth( octaves );
+		osc2.setPulseWidth( octaves );
+	}
+
+	public void setTimbre( int value ) {
+		osc1.setComplexity( value );
+		osc2.setComplexity( value );
+	}
+
 	public void setPortamentoTime( int millis ) {
 		if( millis >= 0 ) {
 			portaTime = millis;
@@ -54,6 +74,10 @@ public class Voice {
 
 	public void setVolume( int vol ) {
 		volume = vol;
+	}
+
+	public int getVolume() {
+		return volEnv.getAmplitude();
 	}
 
 	/* KeyOn without keyOff for portamento. */
@@ -79,8 +103,10 @@ public class Voice {
 			} 
 		}
 		if( volEnv.getAmplitude() <= 0 ) {
-			vibLfo1.setPhase( 0 );
-			vibLfo2.setPhase( 0 );
+			/* Synchronize oscillators. */
+			lfo.setPhase( 0 );
+			osc1.setPhase( 0 );
+			osc2.setPhase( 0 );
 		}
 		volEnv.keyOn();
 		calculateAmplitude( true );
@@ -99,97 +125,13 @@ public class Voice {
 		calculateAmplitude( true );
 	}
 
-	public int getVolume() {
-		return volEnv.getAmplitude();
-	}
-
-	/*
-		Set pitch wheel position ( +-1 octave ).
-		Value is from -8192 to 8191 inclusive.
-	*/
-	public void setPitchWheel( int value ) {
-		if( 8192 > value && value >= -8192 ) {
-			pitchWheel = ( value << 18 ) >> 31 - Maths.FP_SHIFT;
-			pitchWheel /= 6;
-		}
-	}
-
-	public int getController( int controlIdx ) {
-		int value = 0;
-		if( controlIdx >= 0 && controlIdx < NUM_CONTROLLERS ) {
-			value = controllers[ controlIdx ];
-		}
-		return value;
-	}
-
-	/*
-		Set a modulation controller position.
-		Value is from 0 to 127 inclusive.
-	*/
-	public void setController( int controlIdx, int value ) {
-		if( controlIdx >= 0 && controlIdx < NUM_CONTROLLERS && value >= 0 && value < 128 ) {
-			controllers[ controlIdx ] = ( byte ) value;
-			switch( controlIdx ) {
-				case 0:
-					osc1.setEvenHarmonics( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
-					osc2.setEvenHarmonics( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
-					break;
-				case 1:
-					volEnv.setAttackTime( value << 4 );
-					break;
-				case 2:
-					volEnv.setReleaseTime( value << 4 );
-					break;
-				case 3:
-					if( value <= 0 ) {
-						detune = 0;
-						if( vibLfo1.getDepth() <= 0 ) {
-							/* Lock the oscillators together.*/
-							osc2.setPhase( osc1.getPhase() );
-							calculatePitch( true );
-						}
-					} else {
-						value = ( value + 1 ) << Maths.FP_SHIFT - 7;
-						detune = Maths.expScale( value, 8 );
-					}
-					break;
-				case 4:
-					value = 128 - value << Maths.FP_SHIFT - 7;
-					value = Maths.expScale( value, 11 );
-					vibLfo1.setCycleLen( value );
-					vibLfo2.setCycleLen( value * 99 / 70 );
-					break;
-				case 5:
-					if( value <= 0 ) {
-						vibLfo1.setDepth( 0 );
-						vibLfo2.setDepth( 0 );
-						if( detune <= 0 ) {
-							osc2.setPhase( osc1.getPhase() );
-							calculatePitch( true );
-						}
-					} else {
-						value = value << Maths.FP_SHIFT - 7;
-						value = Maths.expScale( value, 8 );
-						vibLfo1.setDepth( value );
-						vibLfo2.setDepth( value );
-					}
-					break;
-				case 6:
-					osc1.setPulseWidth( value << Maths.FP_SHIFT - 7 );
-					osc2.setPulseWidth( value << Maths.FP_SHIFT - 7 );
-					break;
-				case 7:
-					osc1.setComplexity( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
-					osc2.setComplexity( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
-					break;
-			}
-		}
+	public void setPitchWheel( int octaves ) {
+		pitchWheel = octaves;
 	}
 
 	public void getAudio( int[] outBuf, int offset, int length ) {
 		int amplitude;
-		vibLfo1.update( length );
-		vibLfo2.update( length );
+		lfo.update( length );
 		if( pitch < portaPitch ) {
 			pitch = pitch + portaRate * length / tickLen;
 			if( pitch > portaPitch ) {
@@ -210,15 +152,14 @@ public class Voice {
 	}
 
 	private void calculatePitch( boolean now ) {
-		int vibrato1 = vibLfo1.getAmplitude();
-		int vibrato2 = vibLfo2.getAmplitude();
-		osc1.setPitch( pitch + pitchWheel + vibrato1, now );
-		osc2.setPitch( pitch + pitchWheel + vibrato2 + detune, now );
+		int vibrato = lfo.getAmplitude();
+		osc1.setPitch( pitch + pitchWheel + vibrato, now );
+		osc2.setPitch( pitch + pitchWheel + detune, now );
 	}
 
 	private void calculateAmplitude( boolean now ) {
 		int amplitude;
-		amplitude = volEnv.getAmplitude() * volume >> Maths.FP_SHIFT + 1;
+		amplitude = ( volEnv.getAmplitude() * volume ) >> ( Maths.FP_SHIFT + 1 );
 		osc1.setAmplitude( amplitude, now );
 		osc2.setAmplitude( amplitude, now );
 	}

@@ -67,7 +67,11 @@ public class MidiReceiver implements Receiver {
 				break;
 			case 0xE: /* Pitch wheel.*/
 				ctrlValue = ( msgData[ 1 ] & 0x7F ) | ( ( msgData[ 2 ] & 0x7F ) << 7 );
-				synthesizer.setPitchWheel( ctrlValue > 8191 ? ctrlValue - 16384 : ctrlValue );
+				if( ctrlValue > 8191 ) {
+					ctrlValue = ctrlValue - 16384;
+				}
+				ctrlValue = ( ctrlValue << 18 ) >> ( 31 - Maths.FP_SHIFT );
+				synthesizer.setPitchWheel( ctrlValue / 6 );
 				break;
 		}
 	}
