@@ -8,4 +8,5 @@ public interface Controls {
 	public void setController( int controller, int value );
 	public void setModWheel( int value );
 	public void setPitchWheel( int value );
+	public int mapMIDIController( int controller );
 }

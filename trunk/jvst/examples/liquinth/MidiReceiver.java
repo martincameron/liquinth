@@ -43,24 +43,31 @@ public class MidiReceiver implements Receiver {
 				synthesizer.noteOn( msgData[ 1 ] & 0x7F, msgData[ 2 ] & 0x7F );
 				break;
 			case 0xB: /* Control change.*/
-				/* Controller 120 = all sound off */
-				/* Controller 121 = reset all controllers */
-				/* Controller 123 = all notes off */
 				ctrlIndex = msgData[ 1 ] & 0x7F;
 				ctrlValue = msgData[ 2 ] & 0x7F;
-				if( ctrlIndex == 1 ) {
-					// Modulation wheel
-					synthesizer.setModWheel( ctrlValue );
-				} else {
-					synthesizer.setController( ctrlIndex - 20, ctrlValue );
-				}
+				switch( ctrlIndex ) {
+					case 1: /* Modulation wheel. */
+						synthesizer.setModWheel( ctrlValue );
+						break;
+					case 120: /* All sound off. */
+						synthesizer.allNotesOff( true );
+						break;
+					case 121: /* Reset all controllers. */
+						break;
+					case 123: /* All notes off. */
+						synthesizer.allNotesOff( false );
+						break;
+					default:
+						synthesizer.setController( synthesizer.mapMIDIController( ctrlIndex ), ctrlValue );
+						break;
+				}				
 				break;
 			case 0xC: /* Program change.*/
 				/* program = msgData[ 1 ] & 0x7F; */
 				break;
 			case 0xE: /* Pitch wheel.*/
 				ctrlValue = ( msgData[ 1 ] & 0x7F ) | ( ( msgData[ 2 ] & 0x7F ) << 7 );
-				synthesizer.setPitchWheel( ctrlValue - 8192 );
+				synthesizer.setPitchWheel( ctrlValue > 8191 ? ctrlValue - 16384 : ctrlValue );
 				break;
 		}
 	}

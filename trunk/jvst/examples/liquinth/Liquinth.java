@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a41";
-	public static final String AUTHOR = "(c)2012 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20120317;
+	public static final String VERSION = "Liquinth a42dev";
+	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
+	public static final int RELEASE_DATE = 20131117;
 
 	private static final int
 		LOG2_NUM_VOICES = 3,
@@ -249,6 +249,25 @@ public class Liquinth implements Synthesizer, AudioSource {
 		}
 	}
 
+	public int mapMIDIController( int controller ) {
+		switch( controller ) {
+			case 5: /* Portamento time. */
+				return 5;
+			case 70: /* Waveform.*/
+				return 6;
+			case 71: /* Resonance. */
+				return 2;
+			case 72: /* Release. */
+				return 8;
+			case 73: /* Attack. */
+				return 7;
+			case 74: /* Cutoff. */
+				return 1;
+			default:
+				return controller - 20;
+		}
+	}
+	
 	public synchronized void setModWheel( int value ) {
 		// Hard coded to vibrato depth.
 		setController( 11, value );
