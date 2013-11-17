@@ -74,11 +74,13 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	}
 		
 	public void setController( final int controller, final int value ) {
-		SwingUtilities.invokeLater( new Runnable() {
-			public void run() {
-				controllers[ controller ].setValue( value );
-			}
-		} );
+		if( controller >= 0 && controller < controllers.length ) {
+			SwingUtilities.invokeLater( new Runnable() {
+				public void run() {
+					controllers[ controller ].setValue( value );
+				}
+			} );
+		}
 	}
 
 	public void setPitchWheel( int value ) {
@@ -88,7 +90,11 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	public void setModWheel( int value ) {
 		setController( c1AssignCb.getSelectedIndex(), value );
 	}
-	
+
+	public int mapMIDIController( int controller ) {
+		return synthesizer.mapMIDIController( controller );
+	}
+
 	private class SliderListener implements ChangeListener {
 		private int controller;
 
