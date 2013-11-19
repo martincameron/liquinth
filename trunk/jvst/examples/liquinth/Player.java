@@ -9,6 +9,7 @@ import javax.sound.sampled.*;
 */
 public class Player implements Runnable {
 	public static final int SAMPLING_RATE = 48000;
+	public static final int OVERSAMPLE = 2;
 
 	private static final int BUF_FRAMES = 1024;
 	private static final int BUF_BYTES = BUF_FRAMES * 2;
@@ -35,7 +36,7 @@ public class Player implements Runnable {
 	}
 
 	public void run() {
-		int mixIdx, outIdx, out;
+		int mixIdx, mixEnd, outIdx, out;
 		int[] mixBuf;
 		byte[] outBuf;
 		SourceDataLine audioLine;
@@ -43,7 +44,7 @@ public class Player implements Runnable {
 			stop();
 		}
 		play = true;
-		mixBuf = audioSource.allocateMixBuf( BUF_FRAMES );
+		mixBuf = new int[ BUF_FRAMES * OVERSAMPLE ];
 		outBuf = new byte[ BUF_BYTES ];
 		try {
 			audioLine = ( SourceDataLine ) audioMixer.getLine( lineInfo );
@@ -56,12 +57,15 @@ public class Player implements Runnable {
 		running = true;
 		while( play ) {
 			outIdx = 0;
-			audioSource.getAudio( mixBuf, BUF_FRAMES );
-			for( mixIdx = 0; mixIdx < BUF_FRAMES; mixIdx++ ) {
+			mixIdx = 0;
+			mixEnd = BUF_FRAMES * OVERSAMPLE;
+			audioSource.getAudio( mixBuf, mixEnd );
+			while( mixIdx < mixEnd ) {
 				out = mixBuf[ mixIdx ];
 				outBuf[ outIdx     ] = ( byte ) ( out & 0xFF );
 				outBuf[ outIdx + 1 ] = ( byte ) ( out >> 8 );
 				outIdx += 2;
+				mixIdx += OVERSAMPLE;
 			}
 			audioLine.write( outBuf, 0, BUF_BYTES );
 		}
