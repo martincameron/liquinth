@@ -7,7 +7,7 @@ import javax.swing.border.*;
 
 public class LiquinthJS extends JPanel {
 	public LiquinthJS() {
-		Liquinth liquinth = new Liquinth( Player.SAMPLING_RATE );
+		Liquinth liquinth = new Liquinth( Player.SAMPLING_RATE * Player.OVERSAMPLE );
 		Player player = new Player( liquinth );
 		AudioSelector audioSelector = new AudioSelector( player );
 		SynthesizerPanel synthPanel = new SynthesizerPanel( liquinth );

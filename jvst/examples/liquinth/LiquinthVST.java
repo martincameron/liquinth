@@ -7,7 +7,7 @@ import jvst.wrapper.valueobjects.*;
 public class LiquinthVST extends VSTPluginAdapter {
 	private static final int
 		NUM_PROGRAMS = 16,
-		MIX_BUF_FRAMES = 1024;
+		MIX_BUF_FRAMES = 4096;
 
 	private Synthesizer synthesizer;
 	private AudioSource audioSource;
@@ -18,25 +18,17 @@ public class LiquinthVST extends VSTPluginAdapter {
 
 	public LiquinthVST( long wrapper ) {
 		super( wrapper );
-		
-		Liquinth liquinth = new Liquinth( 48000 );
-		synthesizer = liquinth;
-		audioSource = liquinth;
-		midiReceiver = new MidiReceiver( synthesizer );
-
+		setSampleRate( 48000 );
+		mixBuf = new int[ MIX_BUF_FRAMES ];
 		programs = new Program[ NUM_PROGRAMS ];
 		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
 			programs[ prgIdx ] = new Program( "Blank " + prgIdx, synthesizer );
 		}
-
-		mixBuf = audioSource.allocateMixBuf( MIX_BUF_FRAMES );
-		
 		setNumInputs( 0 );
 		setNumOutputs( 1 );
 		canProcessReplacing( true );
 		isSynth( true );
 		setUniqueID( Liquinth.RELEASE_DATE );
-
 		suspend();
 	}
 
@@ -59,7 +51,10 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public void setSampleRate( float sampleRate ) {
-		audioSource.setSamplingRate( ( int ) sampleRate );
+		Liquinth liquinth = new Liquinth( ( int ) sampleRate );
+		synthesizer = liquinth;
+		audioSource = liquinth;
+		midiReceiver = new MidiReceiver( synthesizer );
 	}
 
 	public void setProgram( int index ) {

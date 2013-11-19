@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev2";
+	public static final String VERSION = "Liquinth a42dev4";
 	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20131117;
+	public static final int RELEASE_DATE = 20131119;
 
 	private static final int
 		LOG2_NUM_VOICES = 4, /* 16 voices.*/
@@ -32,26 +32,22 @@ public class Liquinth implements Synthesizer, AudioSource {
 	private Voice[] voices;
 	private byte[] keyStatus, controllers;
 
-	public Liquinth( int samplingRate ) {
-		filter = new MoogFilter( samplingRate );
+	public Liquinth( int sampleRate ) {
+		int idx;
+		filter = new MoogFilter( sampleRate );
 		voices = new Voice[ NUM_VOICES ];
 		keyStatus = new byte[ 128 ];
 		controllers = new byte[ controlNames.length ];
-		setSamplingRate( samplingRate );
-		setController( 0, 42 );
-		setController( 1, 127 );
-	}
-
-	public void setSamplingRate( int samplingRate ) {
-		int idx;
-		filterEnv = new Envelope( samplingRate );
+		filterEnv = new Envelope( sampleRate );
 		for( idx = 0; idx < NUM_VOICES; idx++ ) {
-			voices[ idx ] = new Voice( samplingRate );
+			voices[ idx ] = new Voice( sampleRate );
 			voices[ idx ].keyOn( idx );
 		}
 		allNotesOff( true );
-		for( idx = 0; idx < controllers.length; idx++ ) {
-			setController( idx, controllers[ idx ] );
+		setController( 0, 42 );
+		setController( 1, 127 );
+		for( idx = 2; idx < controllers.length; idx++ ) {
+			setController( idx, 0 );
 		}
 	}
 
@@ -65,10 +61,6 @@ public class Liquinth implements Synthesizer, AudioSource {
 			name = controlNames[ controller ];
 		}
 		return name;
-	}
-
-	public int[] allocateMixBuf( int frames ) {
-		return new int[ frames ];
 	}
 
 	public synchronized void getAudio( int[] outBuf, int length ) {
