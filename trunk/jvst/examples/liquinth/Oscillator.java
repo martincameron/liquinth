@@ -53,7 +53,7 @@ public class Oscillator {
 	}
 
 	public void getAudio( int[] outBuf, int offset, int length ) {
-		int table = ( a5Pitch + pitch1 ) >> Maths.FP_SHIFT;
+		int table = ( a5Pitch + pitch1 + pulseWidth ) >> Maths.FP_SHIFT;
 		if( table < minTab ) table = minTab;
 		if( table >= NUM_TABLES ) table = NUM_TABLES - 1;
 		int step = Maths.exp2( a5Pitch + pitch1 + pulseWidth ) << 4;
