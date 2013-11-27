@@ -6,7 +6,7 @@ public class Oscillator {
 	private static final int TABLE_0_PARTIALS = 768;
 	private static final int WAVE_LEN = 1 << 11;
 	private static final int WAVE_MASK = WAVE_LEN - 1;
-	private static final int PHASE_MASK = ( WAVE_LEN << Maths.FP_SHIFT ) - 1;
+	private static final int PHASE_MASK = ( WAVE_LEN << ( Maths.FP_SHIFT + 1 ) ) - 1;
 
 	private static short[][] oddHarmonics, evenHarmonics;
 
@@ -23,9 +23,13 @@ public class Oscillator {
 		evnAmp = level;
 	}
 
-	/* Pulse width is halved every increase of Maths.FP_ONE. Zero is full width. */
-	public void setPulseWidth( int width ) {
-		pulseWidth = width;
+	/* Set the pulse width of the oscillator.
+	   The parameter determines the frequency of the odd cycles relative to
+	   the current pitch. The frequency of the even cycles are adjusted to
+	   maintain the same overall wavelength. */
+	public void setPulseWidth( int octaves ) {
+		if( octaves <= -Maths.FP_ONE ) octaves = 1 - Maths.FP_ONE;
+		pulseWidth = octaves;
 	}
 
 	/* Set the harmonic complexity of the oscillator. */
@@ -56,27 +60,25 @@ public class Oscillator {
 		int table = ( a5Pitch + pitch1 + pulseWidth ) >> Maths.FP_SHIFT;
 		if( table < minTab ) table = minTab;
 		if( table >= NUM_TABLES ) table = NUM_TABLES - 1;
-		int step = Maths.exp2( a5Pitch + pitch1 + pulseWidth ) << 4;
-		int step2 = Maths.exp2( a5Pitch + pitch2 + pulseWidth ) << 4;
-		int dstp = ( step2 - step ) / length;
+		int stepA1 = Maths.exp2( a5Pitch + pitch1 + pulseWidth ) << 4;
+		int stepA2 = Maths.exp2( a5Pitch + pitch2 + pulseWidth ) << 4;
+		int dstepA = ( stepA2 - stepA1 ) / length;
+		int stepB1 = Maths.exp2( a5Pitch + pitch1 - Maths.log2( Maths.FP_TWO - Maths.exp2( -pulseWidth ) ) ) << 4;
+		int stepB2 = Maths.exp2( a5Pitch + pitch2 - Maths.log2( Maths.FP_TWO - Maths.exp2( -pulseWidth ) ) ) << 4;		
+		int dstepB = ( stepB2 - stepB1 ) / length;
 		int ampl = ampl1 << 16;
 		int damp = ( ( ampl2 << 16 ) - ampl ) / length;
-		int cycleLen = WAVE_LEN * Maths.exp2( pulseWidth );
 		int phase = this.phase;
 		short[] oddTab = oddHarmonics[ table ];
 		short[] evnTab = evenHarmonics[ table ];
 		for( int end = offset + length; offset < end; offset++ ) {
 			int x = phase >> Maths.FP_SHIFT;
-			if( x < WAVE_LEN ) {
-				int y = oddTab[ x ] + ( ( evnTab[ x ] * evnAmp ) >> Maths.FP_SHIFT );
-				outBuf[ offset ] += ( y * ( ampl >> 16 ) ) >> Maths.FP_SHIFT;
-			}
-			phase = phase + ( step >> 4 );
-			while( phase >= cycleLen ) {
-				phase -= cycleLen;
-			}
+			int y = oddTab[ x & WAVE_MASK ] + ( ( evnTab[ x & WAVE_MASK ] * evnAmp ) >> Maths.FP_SHIFT );
+			outBuf[ offset ] += ( y * ( ampl >> 16 ) ) >> Maths.FP_SHIFT;
+			phase = ( phase + ( ( x & WAVE_LEN ) > 0 ? ( stepB1 >> 4 ) : ( stepA1 >> 4 ) ) ) & PHASE_MASK;
 			ampl += damp;
-			step += dstp;
+			stepA1 += dstepA;
+			stepB1 += dstepB;
 		}
 		this.phase = phase;
 		ampl1 = ampl2;
