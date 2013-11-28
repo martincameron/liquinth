@@ -60,12 +60,11 @@ public class Oscillator {
 		int table = ( a5Pitch + pitch1 + pulseWidth ) >> Maths.FP_SHIFT;
 		if( table < minTab ) table = minTab;
 		if( table >= NUM_TABLES ) table = NUM_TABLES - 1;
-		int stepA1 = Maths.exp2( a5Pitch + pitch1 + pulseWidth ) << 4;
-		int stepA2 = Maths.exp2( a5Pitch + pitch2 + pulseWidth ) << 4;
-		int dstepA = ( stepA2 - stepA1 ) / length;
-		int stepB1 = Maths.exp2( a5Pitch + pitch1 - Maths.log2( Maths.FP_TWO - Maths.exp2( -pulseWidth ) ) ) << 4;
-		int stepB2 = Maths.exp2( a5Pitch + pitch2 - Maths.log2( Maths.FP_TWO - Maths.exp2( -pulseWidth ) ) ) << 4;		
-		int dstepB = ( stepB2 - stepB1 ) / length;
+		int pwidth = ( WAVE_LEN * Maths.exp2( -pulseWidth ) ) >> Maths.FP_SHIFT;
+		int oscale = ( WAVE_LEN << Maths.FP_SHIFT ) / pwidth;
+		int escale = ( WAVE_LEN << Maths.FP_SHIFT ) / ( 2 * WAVE_LEN - pwidth );
+		int step = Maths.exp2( a5Pitch + pitch1 ) << 4;
+		int dstp = ( ( Maths.exp2( a5Pitch + pitch2 ) << 4 ) - step ) / length;
 		int ampl = ampl1 << 16;
 		int damp = ( ( ampl2 << 16 ) - ampl ) / length;
 		int phase = this.phase;
@@ -73,12 +72,12 @@ public class Oscillator {
 		short[] evnTab = evenHarmonics[ table ];
 		for( int end = offset + length; offset < end; offset++ ) {
 			int x = phase >> Maths.FP_SHIFT;
+			x = ( ( x < pwidth ) ? ( x * oscale ) : ( x - pwidth ) * escale ) >> Maths.FP_SHIFT;
 			int y = oddTab[ x & WAVE_MASK ] + ( ( evnTab[ x & WAVE_MASK ] * evnAmp ) >> Maths.FP_SHIFT );
 			outBuf[ offset ] += ( y * ( ampl >> 16 ) ) >> Maths.FP_SHIFT;
-			phase = ( phase + ( ( x & WAVE_LEN ) > 0 ? ( stepB1 >> 4 ) : ( stepA1 >> 4 ) ) ) & PHASE_MASK;
+			phase = ( phase + ( step >> 4 ) ) & PHASE_MASK;
 			ampl += damp;
-			stepA1 += dstepA;
-			stepB1 += dstepB;
+			step += dstp;
 		}
 		this.phase = phase;
 		ampl1 = ampl2;
