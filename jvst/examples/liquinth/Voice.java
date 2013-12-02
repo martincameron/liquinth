@@ -9,6 +9,7 @@ public class Voice {
 	private int tickLen, portaTime;
 	private int pitch, portaPitch, portaRate;
 	private int volume, key, pitchWheel, detune;
+	private int pulseWidth, pwmDepth, vibratoDepth;
 
 	public Voice( int samplingRate ) {
 		int idx;
@@ -53,17 +54,25 @@ public class Voice {
 	}
 	
 	public void setVibratoDepth( int octaves ) {
-		lfo.setDepth( octaves );
+		vibratoDepth = octaves;
 	}
 	
 	public void setPulseWidth( int octaves ) {
-		osc1.setPulseWidth( octaves );
-		osc2.setPulseWidth( octaves );
+		pulseWidth = octaves;
 	}
 
 	public void setTimbre( int value ) {
 		osc1.setComplexity( value );
 		osc2.setComplexity( value );
+	}
+
+	public void setPulseWidthModulationDepth( int octaves ) {
+		pwmDepth = octaves;
+	}
+	
+	public void setSubOscillatorLevel( int value ) {
+		osc1.setSubOscillator( value );
+		osc2.setSubOscillator( value );
 	}
 
 	public void setPortamentoTime( int millis ) {
@@ -130,7 +139,7 @@ public class Voice {
 	}
 
 	public void getAudio( int[] outBuf, int offset, int length ) {
-		int amplitude;
+		int pwm;
 		lfo.update( length );
 		if( pitch < portaPitch ) {
 			pitch = pitch + portaRate * length / tickLen;
@@ -147,12 +156,15 @@ public class Voice {
 		calculatePitch( false );
 		volEnv.update( length );
 		calculateAmplitude( false );
+		pwm = pulseWidth + ( ( lfo.getAmplitude() * pwmDepth ) >> Maths.FP_SHIFT );
+		osc1.setPulseWidth( pwm );
+		osc2.setPulseWidth( pwm );
 		osc1.getAudio( outBuf, offset, length );
 		osc2.getAudio( outBuf, offset, length );
 	}
 
 	private void calculatePitch( boolean now ) {
-		int vibrato = lfo.getAmplitude();
+		int vibrato = ( lfo.getAmplitude() * vibratoDepth ) >> Maths.FP_SHIFT;
 		osc1.setPitch( pitch + pitchWheel + vibrato, now );
 		osc2.setPitch( pitch + pitchWheel + detune, now );
 	}

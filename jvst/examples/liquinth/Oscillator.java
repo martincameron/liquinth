@@ -10,7 +10,7 @@ public class Oscillator {
 
 	private static short[][] oddHarmonics, evenHarmonics;
 
-	private int a5Pitch, evnAmp, minTab, pulseWidth;
+	private int a5Pitch, evnAmp, subAmp, minTab, pulseWidth;
 	private int ampl1, ampl2, pitch1, pitch2, phase;
 
 	public Oscillator( int samplingRate ) {
@@ -35,6 +35,11 @@ public class Oscillator {
 	/* Set the harmonic complexity of the oscillator. */
 	public void setComplexity( int value ) {
 		minTab = NUM_TABLES - 1 - ( ( value * NUM_TABLES ) >> Maths.FP_SHIFT );
+	}
+	
+	/* Set the amplitude of the sub oscillator (a square wave 1 octave below the current pitch). */
+	public void setSubOscillator( int level ) {
+		subAmp = level;
 	}
 
 	public void setAmplitude( int amplitude, boolean now ) {
@@ -72,8 +77,9 @@ public class Oscillator {
 		short[] evnTab = evenHarmonics[ table ];
 		for( int end = offset + length; offset < end; offset++ ) {
 			int x = phase >> Maths.FP_SHIFT;
+			int y = ( oddTab[ x >> 1 ] * subAmp ) >> Maths.FP_SHIFT;
 			x = ( ( x < pwidth ) ? ( x * oscale ) : ( x - pwidth ) * escale ) >> Maths.FP_SHIFT;
-			int y = oddTab[ x & WAVE_MASK ] + ( ( evnTab[ x & WAVE_MASK ] * evnAmp ) >> Maths.FP_SHIFT );
+			y = y + oddTab[ x ] + ( ( evnTab[ x ] * evnAmp ) >> Maths.FP_SHIFT );
 			outBuf[ offset ] += ( y * ( ampl >> 16 ) ) >> Maths.FP_SHIFT;
 			phase = ( phase + ( step >> 4 ) ) & PHASE_MASK;
 			ampl += damp;

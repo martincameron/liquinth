@@ -5,8 +5,7 @@ package jvst.examples.liquinth;
 	Low Frequency Oscillator ...
 */
 public class LFO {
-	private int tickLen, phase;
-	private int cycleLen, depth;
+	private int tickLen, cycleLen, phase;
 
 	public LFO( int samplingRate ) {
 		tickLen = samplingRate / 1000;
@@ -25,16 +24,8 @@ public class LFO {
 		cycleLen = tickLen * millis;
 	}
 
-	public int getDepth() {
-		return depth;
-	}
-
-	public void setDepth( int dep ) {
-		depth = dep & Maths.FP_MASK;
-	}
-
 	public int getAmplitude() {
-		return ( Maths.sine( phase ) * depth ) >> Maths.FP_SHIFT;
+		return Maths.sine( phase );
 	}
 
 	public void update( int length ) {
@@ -42,4 +33,3 @@ public class LFO {
 		phase &= Maths.FP_TWO - 1;
 	}
 }
-
