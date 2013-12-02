@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev5";
+	public static final String VERSION = "Liquinth a42dev6";
 	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20131127;
+	public static final int RELEASE_DATE = 20131203;
 
 	private static final int
 		LOG2_NUM_VOICES = 4, /* 16 voices.*/
@@ -24,7 +24,9 @@ public class Liquinth implements Synthesizer, AudioSource {
 		"Vibrato Speed",
 		"Vibrato Depth",
 		"Pulse Width",
-		"Timbre"
+		"Timbre",
+		"Pulse Width Modulation",
+		"Sub Oscillator Level"
 	};
 
 	private MoogFilter filter;
@@ -268,6 +270,16 @@ public class Liquinth implements Synthesizer, AudioSource {
 							voices[ idx ].setTimbre( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
 						}
 						break;
+					case 14: /* Pulse width modulation. */
+						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+							voices[ idx ].setPulseWidthModulationDepth( value << ( Maths.FP_SHIFT - 8 ) );
+						}
+						break;
+					case 15: /* Sub oscillator level. */
+						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+							voices[ idx ].setSubOscillatorLevel( value << ( Maths.FP_SHIFT - 7 ) );
+						}
+						break;
 				}
 			}
 		}
@@ -284,7 +296,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 		switch( controller ) {
 			case 5: /* Portamento time. */
 				return 5;
-			case 70: /* Waveform.*/
+			case 70: /* Waveform. */
 				return 6;
 			case 71: /* Resonance. */
 				return 2;
