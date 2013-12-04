@@ -9,13 +9,16 @@ public class Oscillator {
 	private static final int PHASE_MASK = ( WAVE_LEN << ( Maths.FP_SHIFT + 1 ) ) - 1;
 
 	private static short[][] oddHarmonics, evenHarmonics;
+	private static int[] pulseWidth, evenScale, oddScale;
 
-	private int a5Pitch, evnAmp, subAmp, minTab, pulseWidth;
-	private int ampl1, ampl2, pitch1, pitch2, phase;
+	private int a5Pitch, evnAmp, subAmp, minTab;
+	private int ampl1, ampl2, pitch1, pitch2, pWidth1, pWidth2, phase;
 
 	public Oscillator( int samplingRate ) {
 		int a5Step = 440 * ( ( WAVE_LEN << Maths.FP_SHIFT ) / samplingRate );
 		a5Pitch = Maths.log2( a5Step );
+		setPulseWidth( 0 );
+		pWidth1 = pWidth2;
 	}
 
 	/* Set the level of the even harmonics from 0 (square) to Maths.FP_ONE (sawtooth). */
@@ -23,13 +26,12 @@ public class Oscillator {
 		evnAmp = level;
 	}
 
-	/* Set the pulse width of the oscillator.
+	/* Set the pulse width of the oscillator where -FP_ONE/2 <= octaves < FP_ONE*3/2-1.
 	   The parameter determines the frequency of the odd cycles relative to
 	   the current pitch. The frequency of the even cycles are adjusted to
 	   maintain the same overall wavelength. */
 	public void setPulseWidth( int octaves ) {
-		if( octaves <= -Maths.FP_ONE ) octaves = 1 - Maths.FP_ONE;
-		pulseWidth = octaves;
+		pWidth2 = ( ( octaves >> ( Maths.FP_SHIFT - 7 ) ) + 64 ) & 0xFF;
 	}
 
 	/* Set the harmonic complexity of the oscillator. */
@@ -62,12 +64,11 @@ public class Oscillator {
 	}
 
 	public void getAudio( int[] outBuf, int offset, int length ) {
-		int table = ( a5Pitch + pitch1 + pulseWidth ) >> Maths.FP_SHIFT;
+		int table = ( a5Pitch + pitch1 ) >> Maths.FP_SHIFT;
 		if( table < minTab ) table = minTab;
 		if( table >= NUM_TABLES ) table = NUM_TABLES - 1;
-		int pwidth = ( WAVE_LEN * Maths.exp2( -pulseWidth ) ) >> Maths.FP_SHIFT;
-		int oscale = ( WAVE_LEN << Maths.FP_SHIFT ) / pwidth;
-		int escale = ( WAVE_LEN << Maths.FP_SHIFT ) / ( 2 * WAVE_LEN - pwidth );
+		int pwid = pWidth1 << Maths.FP_SHIFT;
+		int dwid = ( ( pWidth2 - pWidth1 ) << Maths.FP_SHIFT ) / length;
 		int step = Maths.exp2( a5Pitch + pitch1 ) << 4;
 		int dstp = ( ( Maths.exp2( a5Pitch + pitch2 ) << 4 ) - step ) / length;
 		int ampl = ampl1 << 16;
@@ -78,10 +79,16 @@ public class Oscillator {
 		for( int end = offset + length; offset < end; offset++ ) {
 			int x = phase >> Maths.FP_SHIFT;
 			int y = ( oddTab[ x >> 1 ] * subAmp ) >> Maths.FP_SHIFT;
-			x = ( ( x < pwidth ) ? ( x * oscale ) : ( x - pwidth ) * escale ) >> Maths.FP_SHIFT;
+			int w = pulseWidth[ pWidth1 ];
+			x = ( ( x < w ) ? ( x * oddScale[ pWidth1 ] ) : ( x - w ) * evenScale[ pWidth1 ] ) >> Maths.FP_SHIFT;
 			y = y + oddTab[ x ] + ( ( evnTab[ x ] * evnAmp ) >> Maths.FP_SHIFT );
 			outBuf[ offset ] += ( y * ( ampl >> 16 ) ) >> Maths.FP_SHIFT;
-			phase = ( phase + ( step >> 4 ) ) & PHASE_MASK;
+			phase = phase + ( step >> 4 );
+			if( phase > PHASE_MASK ) {
+				pWidth1 = pwid >> Maths.FP_SHIFT;
+				phase &= PHASE_MASK;
+			}
+			pwid += dwid;
 			ampl += damp;
 			step += dstp;
 		}
@@ -118,6 +125,15 @@ public class Oscillator {
 				part++;
 			}
 			parts >>= 1;
+		}
+		/* Generate pulse width modulation tables. */
+		pulseWidth = new int[ 256 ];
+		evenScale = new int[ 256 ];
+		oddScale = new int[ 256 ];
+		for( int x = 0; x < 256; x++ ) {
+			pulseWidth[ x ] = ( WAVE_LEN * Maths.exp2( ( 64 - x ) << ( Maths.FP_SHIFT - 7 ) ) ) >> Maths.FP_SHIFT;
+			evenScale[ x ] = ( WAVE_LEN << Maths.FP_SHIFT ) / ( 2 * WAVE_LEN - pulseWidth[ x ] );
+			oddScale[ x ] = ( WAVE_LEN << Maths.FP_SHIFT ) / pulseWidth[ x ];
 		}
 	}
 }
