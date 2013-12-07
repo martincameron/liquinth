@@ -26,12 +26,12 @@ public class Oscillator {
 		evnAmp = level;
 	}
 
-	/* Set the pulse width of the oscillator where -FP_ONE/2 <= octaves < FP_ONE*3/2-1.
-	   The parameter determines the frequency of the odd cycles relative to
-	   the current pitch. The frequency of the even cycles are adjusted to
-	   maintain the same overall wavelength. */
+	/* Set the pulse width of the oscillator.
+	   The parameter determines the frequency of the odd cycles relative to the current pitch.
+	   The frequency of the even cycles are adjusted to maintain the same overall wavelength. */
 	public void setPulseWidth( int octaves ) {
-		pWidth2 = ( ( octaves >> ( Maths.FP_SHIFT - 7 ) ) + 64 ) & 0xFF;
+		if( octaves < 0 ) octaves = -octaves;
+		pWidth2 = ( octaves >> ( Maths.FP_SHIFT - 7 ) ) & 0xFF;
 	}
 
 	/* Set the harmonic complexity of the oscillator. */
@@ -64,7 +64,7 @@ public class Oscillator {
 	}
 
 	public void getAudio( int[] outBuf, int offset, int length ) {
-		int table = ( a5Pitch + pitch1 ) >> Maths.FP_SHIFT;
+		int table = ( a5Pitch + pitch1 + ( pWidth1 << ( Maths.FP_SHIFT - 7 ) ) ) >> Maths.FP_SHIFT;
 		if( table < minTab ) table = minTab;
 		if( table >= NUM_TABLES ) table = NUM_TABLES - 1;
 		int pwid = pWidth1 << Maths.FP_SHIFT;
@@ -73,13 +73,12 @@ public class Oscillator {
 		int dstp = ( ( Maths.exp2( a5Pitch + pitch2 ) << 4 ) - step ) / length;
 		int ampl = ampl1 << 16;
 		int damp = ( ( ampl2 << 16 ) - ampl ) / length;
-		int phase = this.phase;
 		short[] oddTab = oddHarmonics[ table ];
 		short[] evnTab = evenHarmonics[ table ];
 		for( int end = offset + length; offset < end; offset++ ) {
+			int w = pulseWidth[ pWidth1 ];
 			int x = phase >> Maths.FP_SHIFT;
 			int y = ( oddTab[ x >> 1 ] * subAmp ) >> Maths.FP_SHIFT;
-			int w = pulseWidth[ pWidth1 ];
 			x = ( ( x < w ) ? ( x * oddScale[ pWidth1 ] ) : ( x - w ) * evenScale[ pWidth1 ] ) >> Maths.FP_SHIFT;
 			y = y + oddTab[ x ] + ( ( evnTab[ x ] * evnAmp ) >> Maths.FP_SHIFT );
 			outBuf[ offset ] += ( y * ( ampl >> 16 ) ) >> Maths.FP_SHIFT;
@@ -92,9 +91,8 @@ public class Oscillator {
 			ampl += damp;
 			step += dstp;
 		}
-		this.phase = phase;
-		ampl1 = ampl2;
 		pitch1 = pitch2;
+		ampl1 = ampl2;
 	}
 
 	static {
@@ -131,7 +129,7 @@ public class Oscillator {
 		evenScale = new int[ 256 ];
 		oddScale = new int[ 256 ];
 		for( int x = 0; x < 256; x++ ) {
-			pulseWidth[ x ] = ( WAVE_LEN * Maths.exp2( ( 64 - x ) << ( Maths.FP_SHIFT - 7 ) ) ) >> Maths.FP_SHIFT;
+			pulseWidth[ x ] = ( WAVE_LEN << Maths.FP_SHIFT ) / Maths.exp2( x << ( Maths.FP_SHIFT - 7 ) );
 			evenScale[ x ] = ( WAVE_LEN << Maths.FP_SHIFT ) / ( 2 * WAVE_LEN - pulseWidth[ x ] );
 			oddScale[ x ] = ( WAVE_LEN << Maths.FP_SHIFT ) / pulseWidth[ x ];
 		}
