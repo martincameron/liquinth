@@ -2,7 +2,7 @@
 package jvst.examples.liquinth;
 
 public class Oscillator {
-	private static final int NUM_TABLES = 9;
+	private static final int NUM_TABLES = 10;
 	private static final int TABLE_0_PARTIALS = 768;
 	private static final int WAVE_LEN = 1 << 11;
 	private static final int WAVE_MASK = WAVE_LEN - 1;
