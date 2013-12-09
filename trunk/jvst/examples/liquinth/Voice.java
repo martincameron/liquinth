@@ -6,14 +6,13 @@ public class Voice {
 	private Envelope volEnv;
 	private LFO lfo;
 
-	private int tickLen, portaTime;
+	private int sampleRate;
 	private int pitch, portaPitch, portaRate;
 	private int volume, key, pitchWheel, detune;
 	private int pulseWidth, pwmDepth, vibratoDepth;
 
 	public Voice( int samplingRate ) {
-		int idx;
-		tickLen = samplingRate / 1000;
+		sampleRate = samplingRate;
 		osc1 = new Oscillator( samplingRate );
 		osc2 = new Oscillator( samplingRate );
 		volEnv = new Envelope( samplingRate );
@@ -38,15 +37,9 @@ public class Voice {
 	public void setVolRelease( int millis ) {
 		volEnv.setReleaseTime( millis );
 	}
-	
-	public void setOsc1Tuning( int octaves ) {
-	}
 
 	public void setOsc2Tuning( int octaves ) {
-		detune = 0;
-		if( octaves > 0 ) {
-			detune = Maths.expScale( octaves, 8 );
-		}
+		detune = octaves;
 	}
 	
 	public void setLFOSpeed( int millis ) {
@@ -75,10 +68,11 @@ public class Voice {
 		osc2.setSubOscillator( value );
 	}
 
-	public void setPortamentoTime( int millis ) {
-		if( millis >= 0 ) {
-			portaTime = millis;
+	public void setPortamentoTime( int millisPerOctave ) {
+		if( millisPerOctave < 1 ) {
+			millisPerOctave = 1;
 		}
+		portaRate = ( Maths.FP_ONE << 15 ) / ( sampleRate * millisPerOctave );
 	}
 
 	public void setVolume( int vol ) {
@@ -91,34 +85,16 @@ public class Voice {
 
 	/* KeyOn without keyOff for portamento. */
 	public void keyOn( int key ) {
-		if( key != this.key ) {
-			this.key = key;
-			portaPitch = Maths.FP_ONE * ( ( key & 0x7F ) - 69 ) / 12;
-			if( volEnv.keyIsOn() ) {
-				/* Portamento */
-				portaRate = 0;
-				if( portaTime > 0 ) {
-					portaRate = ( portaPitch - pitch ) / portaTime;
-				}
-				if( portaRate == 0 ) {
-					pitch = portaPitch;
-					calculatePitch( true );
-				}
-			} else {
-				/* Not portamento.*/
-				volEnv.keyOff( true );
-				pitch = portaPitch;
-				calculatePitch( true );
-			} 
-		}
+		this.key = key;
+		portaPitch = Maths.FP_ONE * ( ( key & 0x7F ) - 69 ) / 12;
 		if( volEnv.getAmplitude() <= 0 ) {
 			/* Synchronize oscillators. */
 			lfo.setPhase( 0 );
 			osc1.setPhase( 0 );
 			osc2.setPhase( 0 );
+			pitch = portaPitch;
 		}
 		volEnv.keyOn();
-		calculateAmplitude( true );
 	}
 
 	public boolean keyIsOn() {
@@ -130,8 +106,7 @@ public class Voice {
 	}
 
 	public void keyOff( boolean soundOff ) {
-		volEnv.keyOff( soundOff );
-		calculateAmplitude( true );
+		volEnv.keyOff( false );
 	}
 
 	public void setPitchWheel( int octaves ) {
@@ -139,28 +114,36 @@ public class Voice {
 	}
 
 	public void getAudio( int[] outBuf, int offset, int length ) {
-		int pwm;
-		lfo.update( length );
-		if( pitch < portaPitch ) {
-			pitch = pitch + portaRate * length / tickLen;
-			if( pitch > portaPitch ) {
-				pitch = portaPitch;
+		int end = offset + length;
+		while( offset < length ) {
+			int count = end - offset;
+			if( count > ( sampleRate >> 7 ) ) {
+				// Limit count to between 4 and 8ms.
+				count = sampleRate >> 8;
 			}
-		}
-		if( pitch > portaPitch ) {
-			pitch = pitch + portaRate * length / tickLen;
+			lfo.update( count );
 			if( pitch < portaPitch ) {
-				pitch = portaPitch;
+				pitch = pitch + ( ( portaRate * count ) >> 5 );
+				if( pitch > portaPitch ) {
+					pitch = portaPitch;
+				}
 			}
+			if( pitch > portaPitch ) {
+				pitch = pitch - ( ( portaRate * count ) >> 5 );
+				if( pitch < portaPitch ) {
+					pitch = portaPitch;
+				}
+			}
+			calculatePitch( false );
+			volEnv.update( count );
+			calculateAmplitude( false );
+			int pwm = pulseWidth + ( ( lfo.getAmplitude() * pwmDepth ) >> Maths.FP_SHIFT );
+			osc1.setPulseWidth( pwm );
+			osc2.setPulseWidth( pwm );
+			osc1.getAudio( outBuf, offset, count );
+			osc2.getAudio( outBuf, offset, count );
+			offset += count;
 		}
-		calculatePitch( false );
-		volEnv.update( length );
-		calculateAmplitude( false );
-		pwm = pulseWidth + ( ( lfo.getAmplitude() * pwmDepth ) >> Maths.FP_SHIFT );
-		osc1.setPulseWidth( pwm );
-		osc2.setPulseWidth( pwm );
-		osc1.getAudio( outBuf, offset, length );
-		osc2.getAudio( outBuf, offset, length );
 	}
 
 	private void calculatePitch( boolean now ) {

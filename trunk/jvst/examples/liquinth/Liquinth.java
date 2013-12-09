@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev8";
+	public static final String VERSION = "Liquinth a42dev9";
 	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20131206;
+	public static final int RELEASE_DATE = 20131213;
 
 	private static final int
 		LOG2_NUM_VOICES = 4, /* 16 voices.*/
@@ -216,10 +216,11 @@ public class Liquinth implements Synthesizer, AudioSource {
 						filterEnv.setReleaseTime( value << 4 );
 						break;
 					case 5: /* Portamento time.*/
-						value = value << Maths.FP_SHIFT - 7;
-						value = Maths.expScale( value, 7 );
+						if( value > 0 ) {
+							value = Maths.expScale( ( value << Maths.FP_SHIFT - 7 ), 10 );
+						}
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
-							voices[ idx ].setPortamentoTime( value * 1000 / Maths.FP_ONE );
+							voices[ idx ].setPortamentoTime( value >> ( Maths.FP_SHIFT - 10 ) );
 						}
 						break;
 					case 6: /* Voice waveform.*/
@@ -240,6 +241,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 					case 9: /* Detune. */
 						if( value > 0 ) {
 							value = ( value + 1 ) << ( Maths.FP_SHIFT - 7 );
+							value = Maths.expScale( value, 8 );
 						}
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setOsc2Tuning( value );
