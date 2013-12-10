@@ -20,17 +20,17 @@ package jvst.examples.liquinth;
 public class MoogFilter {
 	private static final float SCALE = 1f / 32768f;
 	
-	private float maxCutoff;
+	private float fc24khz;
 	private float cutoff, cutoffDest, resonance;
 	private float i1, i2, i3, i4;
 	private float o1, o2, o3, o4;
 
 	public MoogFilter( float samplingRate ) {
-		maxCutoff = 48000f / samplingRate;
+		fc24khz = 48000f / samplingRate;
 	}
 
 	public void setCutoff( float cut ) {
-		cut = cut * maxCutoff;
+		cut = cut * fc24khz;
 		if( cut < 0f ) cut = 0f;
 		if( cut > 1f ) cut = 1f;
 		cutoffDest = cut;
@@ -42,13 +42,12 @@ public class MoogFilter {
 		resonance = res;
 	}
 
-	public void filter( int[] buf, int length ) {
-		int idx, i, c, m, x;
+	public void filter( int[] buf, int offset, int length ) {
 		float cutoffDelta, in, out, f1, f2, f4, fb, fk;
 		cutoffDelta = ( cutoffDest - cutoff ) / length;
-		idx = 0;
-		while( idx < length ) {
-			in = buf[ idx ] * SCALE;
+		int end = offset + length;
+		while( offset < end ) {
+			in = buf[ offset ] * SCALE;
 			cutoff += cutoffDelta;
 			f1 = cutoff * 1.16f;
 			f2 = f1 * f1;
@@ -70,7 +69,7 @@ public class MoogFilter {
 			if( o4 < -1f ) o4 = -1f;
 			/* Waveshaping. */
 			out = 1.5f * o4 - 0.5f * o4 * o4 * o4;
-			buf[ idx++ ] = ( int ) ( out * 32767f );
+			buf[ offset++ ] = ( int ) ( out * 32767f );
 		}
 	}
 }

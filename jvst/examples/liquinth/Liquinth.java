@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev9";
+	public static final String VERSION = "Liquinth a42dev10";
 	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20131213;
+	public static final int RELEASE_DATE = 20131210;
 
 	private static final int
 		LOG2_NUM_VOICES = 4, /* 16 voices.*/
@@ -33,22 +33,23 @@ public class Liquinth implements Synthesizer, AudioSource {
 	private Envelope filterEnv;
 	private Voice[] voices;
 	private byte[] keyStatus, controllers;
+	private int sampleRate, filterCutoff1, filterCutoff2;
 
-	public Liquinth( int sampleRate ) {
-		int idx;
+	public Liquinth( int samplingRate ) {
+		sampleRate = samplingRate;
 		filter = new MoogFilter( sampleRate );
 		voices = new Voice[ NUM_VOICES ];
 		keyStatus = new byte[ 128 ];
 		controllers = new byte[ controlNames.length ];
 		filterEnv = new Envelope( sampleRate );
-		for( idx = 0; idx < NUM_VOICES; idx++ ) {
+		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 			voices[ idx ] = new Voice( sampleRate );
 			voices[ idx ].keyOn( idx );
 		}
 		allNotesOff( true );
 		setController( 0, 42 );
 		setController( 1, 127 );
-		for( idx = 2; idx < controllers.length; idx++ ) {
+		for( int idx = 2; idx < controllers.length; idx++ ) {
 			setController( idx, 0 );
 		}
 	}
@@ -66,26 +67,36 @@ public class Liquinth implements Synthesizer, AudioSource {
 	}
 
 	public synchronized void getAudio( int[] outBuf, int length ) {
-		int idx, cutoff, alevel;
 		/* Clear mix buffer.*/
-		for( idx = 0; idx < length; idx++ ) {
+		for( int idx = 0; idx < length; idx++ ) {
 			outBuf[ idx ] = 0;
 		}
-		/* Get audio from voices. */
-		for( idx = 0; idx < NUM_VOICES; idx++ ) {
-			voices[ idx ].getAudio( outBuf, 0, length );
+		// Ensure changes to filter cutoff are smoothly interpolated.
+		int filterCutoffRate = ( ( filterCutoff2 - filterCutoff1 ) << Maths.FP_SHIFT ) / length;
+		int offset = 0;
+		while( offset < length ) {
+			int count = length - offset;
+			if( count > ( sampleRate >> 7 ) ) {
+				// Ensure count is no more than 4-8ms to improve envelope responsiveness.
+				count = sampleRate >> 8;
+			}		
+			/* Get audio from voices. */
+			for( int idx = 0; idx < NUM_VOICES; idx++ ) {
+				voices[ idx ].getAudio( outBuf, offset, count );
+			}
+			/* Handle filter envelope.*/
+			filterCutoff1 += ( ( filterCutoffRate * count ) >> Maths.FP_SHIFT );
+			int alevel = controllers[ 3 ] << ( Maths.FP_SHIFT - 7 );
+			int cutoff = filterCutoff1 + ( ( filterEnv.getAmplitude() * alevel ) >> Maths.FP_SHIFT );
+			if( cutoff > Maths.FP_ONE ) {
+				cutoff = Maths.FP_ONE;
+			}
+			cutoff = Maths.expScale( cutoff, 8 );
+			filter.setCutoff( cutoff / ( float ) Maths.FP_ONE );
+			filter.filter( outBuf, offset, count );
+			filterEnv.update( count );
+			offset += count;
 		}
-		/* Handle filter envelope.*/
-		cutoff = ( controllers[ 1 ] + 1 ) << ( Maths.FP_SHIFT - 7 );
-		alevel = controllers[ 3 ] << ( Maths.FP_SHIFT - 7 );
-		cutoff += ( filterEnv.getAmplitude() * alevel ) >> Maths.FP_SHIFT;
-		if( cutoff > Maths.FP_ONE ) {
-			cutoff = Maths.FP_ONE;
-		}
-		cutoff = Maths.expScale( cutoff, 8 );
-		filter.setCutoff( cutoff / ( float ) Maths.FP_ONE );
-		filter.filter( outBuf, length );
-		filterEnv.update( length );
 	}
 
 	public synchronized void noteOn( int key, int velocity ) {
@@ -205,7 +216,8 @@ public class Liquinth implements Synthesizer, AudioSource {
 							voices[ idx ].setVolume( value );
 						}
 						break;
-					case 1: /* Filter cutoff, handled in envelope calculations.*/
+					case 1: /* Filter cutoff. */
+						filterCutoff2 = ( value + 1 ) << ( Maths.FP_SHIFT - 7 );
 						break;
 					case 2: /* Filter resonance.*/
 						filter.setResonance( value * 0.0314f );
