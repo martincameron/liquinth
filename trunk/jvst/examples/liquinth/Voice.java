@@ -114,36 +114,27 @@ public class Voice {
 	}
 
 	public void getAudio( int[] outBuf, int offset, int length ) {
-		int end = offset + length;
-		while( offset < length ) {
-			int count = end - offset;
-			if( count > ( sampleRate >> 7 ) ) {
-				// Limit count to between 4 and 8ms.
-				count = sampleRate >> 8;
-			}
-			lfo.update( count );
-			if( pitch < portaPitch ) {
-				pitch = pitch + ( ( portaRate * count ) >> 5 );
-				if( pitch > portaPitch ) {
-					pitch = portaPitch;
-				}
-			}
+		lfo.update( length );
+		if( pitch < portaPitch ) {
+			pitch = pitch + ( ( portaRate * length ) >> 5 );
 			if( pitch > portaPitch ) {
-				pitch = pitch - ( ( portaRate * count ) >> 5 );
-				if( pitch < portaPitch ) {
-					pitch = portaPitch;
-				}
+				pitch = portaPitch;
 			}
-			calculatePitch( false );
-			volEnv.update( count );
-			calculateAmplitude( false );
-			int pwm = pulseWidth + ( ( lfo.getAmplitude() * pwmDepth ) >> Maths.FP_SHIFT );
-			osc1.setPulseWidth( pwm );
-			osc2.setPulseWidth( pwm );
-			osc1.getAudio( outBuf, offset, count );
-			osc2.getAudio( outBuf, offset, count );
-			offset += count;
 		}
+		if( pitch > portaPitch ) {
+			pitch = pitch - ( ( portaRate * length ) >> 5 );
+			if( pitch < portaPitch ) {
+				pitch = portaPitch;
+			}
+		}
+		calculatePitch( false );
+		volEnv.update( length );
+		calculateAmplitude( false );
+		int pwm = pulseWidth + ( ( lfo.getAmplitude() * pwmDepth ) >> Maths.FP_SHIFT );
+		osc1.setPulseWidth( pwm );
+		osc2.setPulseWidth( pwm );
+		osc1.getAudio( outBuf, offset, length );
+		osc2.getAudio( outBuf, offset, length );
 	}
 
 	private void calculatePitch( boolean now ) {
