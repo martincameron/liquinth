@@ -1,8 +1,7 @@
 
 package jvst.examples.liquinth;
 
-public interface Synthesizer extends Keyboard, Controls {
-/*
+public interface Synthesizer {
 	public void noteOn( int key, int velocity );
 	public void allNotesOff( boolean soundOff );
 	public int getNumControllers();
@@ -11,5 +10,5 @@ public interface Synthesizer extends Keyboard, Controls {
 	public void setController( int controller, int value );
 	public void setModWheel( int value );
 	public void setPitchWheel( int value );
-*/
+	public int mapMIDIController( int controller );
 }

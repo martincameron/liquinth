@@ -44,15 +44,14 @@ public class Oscillator {
 		subAmp = level;
 	}
 
-	public void setAmplitude( int amplitude, boolean now ) {
+	public void setAmplitude( int amplitude ) {
+		// ampl2 = Maths.exp2( amplitude - ( 16 << Maths.FP_SHIFT ) );
 		ampl2 = amplitude;
-		if( now ) ampl1 = ampl2;
 	}
 
 	/* Pitch is in octaves relative to 440hz (A5)*/
-	public void setPitch( int pitch, boolean now ) {
+	public void setPitch( int pitch ) {
 		pitch2 = pitch;
-		if( now ) pitch1 = pitch2;
 	}
 
 	public int getPhase() {

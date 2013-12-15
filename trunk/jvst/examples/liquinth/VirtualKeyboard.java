@@ -52,20 +52,17 @@ public class VirtualKeyboard implements KeyListener {
 		KeyEvent.VK_P,
 	};
 
-	private Keyboard keyboard;
-	private int[] keyStatus;
+	private Synthesizer synthesizer;
 	private int octave;
 
-	public VirtualKeyboard( Keyboard kb ) {
-		keyboard = kb;
-		keyStatus = new int[ keys.length ];
+	public VirtualKeyboard( Synthesizer syn ) {
+		synthesizer = syn;
 		octave = 4;
 	}
 
 	private int getKey( int keyCode ) {
-		int key, idx;
-		key = -1;
-		for( idx = 0; idx < keys.length; idx++ ) {
+		int key = -1;
+		for( int idx = 0; idx < keys.length; idx++ ) {
 			if( keys[ idx ] == keyCode ) {
 				key = idx;
 			}
@@ -73,38 +70,24 @@ public class VirtualKeyboard implements KeyListener {
 		return key;
 	}
 
-	private void allNotesOff( boolean silence ) {
-		int idx;
-		keyboard.allNotesOff( silence );
-		for( idx = 0; idx < keyStatus.length; idx++ ) {
-			keyStatus[ idx ] = 0;
-		}
-	}
-
 	public void keyPressed( KeyEvent ke ) {
-		int key;
-		key = getKey( ke.getKeyCode() );
+		int key = getKey( ke.getKeyCode() );
 		if( key >= 10 ) { /* Note */
-			if( keyStatus[ key ] == 0 ) {
-				keyboard.noteOn( octave * 12 + key - 10, 127 );
-				keyStatus[ key ] = 1;
-			}
+			synthesizer.noteOn( octave * 12 + key - 10, 127 );
 		} else if( key >= 2 ) {
 			/* Set Octave */
 			octave = key - 2;
-			allNotesOff( false );
-		} else if( key >= 0 ) {
-			/* If space, release all, if enter, silence all.*/
-			allNotesOff( key == 0 );
+			synthesizer.allNotesOff( false );
+		} else {
+			/* Space or Enter (all sound off). */
+			synthesizer.allNotesOff( key == 0 );
 		}
 	}
 
 	public void keyReleased( KeyEvent ke ) {
-		int key;
-		key = getKey( ke.getKeyCode() );
+		int key = getKey( ke.getKeyCode() );
 		if( key >= 10 ) { /* Note */
-			keyboard.noteOn( octave * 12 + key - 10, 0 );
-			keyStatus[ key ] = 0;
+			synthesizer.noteOn( octave * 12 + key - 10, 0 );
 		}
 	}
 
