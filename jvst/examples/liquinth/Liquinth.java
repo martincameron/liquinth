@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev10";
+	public static final String VERSION = "Liquinth a42dev11";
 	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20131210;
+	public static final int RELEASE_DATE = 20131215;
 
 	private static final int
 		LOG2_NUM_VOICES = 4, /* 16 voices.*/
@@ -85,6 +85,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 				voices[ idx ].getAudio( outBuf, offset, count );
 			}
 			/* Handle filter envelope.*/
+			filterEnv.update( count );
 			filterCutoff1 += ( ( filterCutoffRate * count ) >> Maths.FP_SHIFT );
 			int alevel = controllers[ 3 ] << ( Maths.FP_SHIFT - 7 );
 			int cutoff = filterCutoff1 + ( ( filterEnv.getAmplitude() * alevel ) >> Maths.FP_SHIFT );
@@ -94,7 +95,6 @@ public class Liquinth implements Synthesizer, AudioSource {
 			cutoff = Maths.expScale( cutoff, 8 );
 			filter.setCutoff( cutoff / ( float ) Maths.FP_ONE );
 			filter.filter( outBuf, offset, count );
-			filterEnv.update( count );
 			offset += count;
 		}
 	}
@@ -160,14 +160,14 @@ public class Liquinth implements Synthesizer, AudioSource {
 			if( portaVoice > -1 ) {
 				if( key == highestKey ) {
 					/* Key pressed is higher than before.*/
-					filterEnv.keyOn();
-					filterEnv.keyOff( false );
+					filterEnv.setAmplitude( Maths.FP_MASK );
+					filterEnv.keyOff();
 					/* New key is the highest. */
 					voices[ portaVoice ].keyOn( key );
 				}
 			} else {
-				filterEnv.keyOn();
-				filterEnv.keyOff( false );
+				filterEnv.setAmplitude( Maths.FP_MASK );
+				filterEnv.keyOff();
 				if( assignedVoice > -1 ) {
 					/* Re-key previously assigned voice. */
 					voices[ assignedVoice ].keyOn( key );

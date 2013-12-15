@@ -106,7 +106,10 @@ public class Voice {
 	}
 
 	public void keyOff( boolean soundOff ) {
-		volEnv.keyOff( false );
+		volEnv.keyOff();
+		if( soundOff ) {
+			volEnv.setAmplitude( 0 );
+		}
 	}
 
 	public void setPitchWheel( int octaves ) {
@@ -114,7 +117,6 @@ public class Voice {
 	}
 
 	public void getAudio( int[] outBuf, int offset, int length ) {
-		lfo.update( length );
 		if( pitch < portaPitch ) {
 			pitch = pitch + ( ( portaRate * length ) >> 5 );
 			if( pitch > portaPitch ) {
@@ -127,26 +129,18 @@ public class Voice {
 				pitch = portaPitch;
 			}
 		}
-		calculatePitch( false );
+		lfo.update( length );
+		int vibrato = ( lfo.getAmplitude() * vibratoDepth ) >> Maths.FP_SHIFT;
+		osc1.setPitch( pitch + pitchWheel + vibrato );
+		osc2.setPitch( pitch + pitchWheel + detune );
 		volEnv.update( length );
-		calculateAmplitude( false );
 		int pwm = pulseWidth + ( ( lfo.getAmplitude() * pwmDepth ) >> Maths.FP_SHIFT );
 		osc1.setPulseWidth( pwm );
 		osc2.setPulseWidth( pwm );
+		int amplitude = ( volEnv.getAmplitude() * volume ) >> ( Maths.FP_SHIFT + 1 );
+		osc1.setAmplitude( amplitude );
+		osc2.setAmplitude( amplitude );
 		osc1.getAudio( outBuf, offset, length );
 		osc2.getAudio( outBuf, offset, length );
-	}
-
-	private void calculatePitch( boolean now ) {
-		int vibrato = ( lfo.getAmplitude() * vibratoDepth ) >> Maths.FP_SHIFT;
-		osc1.setPitch( pitch + pitchWheel + vibrato, now );
-		osc2.setPitch( pitch + pitchWheel + detune, now );
-	}
-
-	private void calculateAmplitude( boolean now ) {
-		int amplitude;
-		amplitude = ( volEnv.getAmplitude() * volume ) >> ( Maths.FP_SHIFT + 1 );
-		osc1.setAmplitude( amplitude, now );
-		osc2.setAmplitude( amplitude, now );
 	}
 }
