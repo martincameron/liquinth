@@ -45,7 +45,6 @@ public class Oscillator {
 	}
 
 	public void setAmplitude( int amplitude ) {
-		// ampl2 = Maths.exp2( amplitude - ( 16 << Maths.FP_SHIFT ) );
 		ampl2 = amplitude;
 	}
 
