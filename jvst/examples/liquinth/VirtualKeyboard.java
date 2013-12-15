@@ -78,7 +78,7 @@ public class VirtualKeyboard implements KeyListener {
 			/* Set Octave */
 			octave = key - 2;
 			synthesizer.allNotesOff( false );
-		} else {
+		} else if( key >= 0 ) {
 			/* Space or Enter (all sound off). */
 			synthesizer.allNotesOff( key == 0 );
 		}
