@@ -2,7 +2,7 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev11";
+	public static final String VERSION = "Liquinth a42dev12";
 	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
 	public static final int RELEASE_DATE = 20131215;
 
@@ -209,9 +209,8 @@ public class Liquinth implements Synthesizer, AudioSource {
 			if( controller >= 0 && controller < controllers.length ) {
 				controllers[ controller ] = ( byte ) value;
 				switch( controller ) {
-					case 0: /* Overdrive. Log from 1/NUM_VOICES to 2. */
-						value = value << Maths.FP_SHIFT - 7;
-						value = Maths.expScale( value, LOG2_NUM_VOICES + 1 ) << 1;
+					case 0: /* Overdrive. */
+						value = value << ( Maths.FP_SHIFT - 6 );
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setVolume( value );
 						}
@@ -225,7 +224,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 					case 3: /* Filter envelope level.*/
 						break;
 					case 4: /* Filter release time.*/
-						filterEnv.setReleaseTime( value << 4 );
+						filterEnv.setReleaseTime( value << 5 );
 						break;
 					case 5: /* Portamento time.*/
 						if( value > 0 ) {
@@ -242,12 +241,12 @@ public class Liquinth implements Synthesizer, AudioSource {
 						break;
 					case 7: /* Volume attack time. */
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
-							voices[ idx ].setVolAttack( value << 4 );
+							voices[ idx ].setVolAttack( value << 5 );
 						}
 						break;
 					case 8: /* Volume release time. */
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
-							voices[ idx ].setVolRelease( value << 4 );
+							voices[ idx ].setVolRelease( value << 5 );
 						}
 						break;
 					case 9: /* Detune. */

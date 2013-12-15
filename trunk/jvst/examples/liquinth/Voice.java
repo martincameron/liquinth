@@ -138,6 +138,8 @@ public class Voice {
 		osc1.setPulseWidth( pwm );
 		osc2.setPulseWidth( pwm );
 		int amplitude = ( volEnv.getAmplitude() * volume ) >> ( Maths.FP_SHIFT + 1 );
+		// x^2 volume curve.
+		amplitude = amplitude * amplitude >> Maths.FP_SHIFT;
 		osc1.setAmplitude( amplitude );
 		osc2.setAmplitude( amplitude );
 		osc1.getAudio( outBuf, offset, length );
