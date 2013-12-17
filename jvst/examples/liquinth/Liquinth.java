@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev12";
+	public static final String VERSION = "Liquinth a42dev13";
 	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20131215;
+	public static final int RELEASE_DATE = 20131217;
 
 	private static final int
 		LOG2_NUM_VOICES = 4, /* 16 voices.*/
@@ -224,14 +224,11 @@ public class Liquinth implements Synthesizer, AudioSource {
 					case 3: /* Filter envelope level.*/
 						break;
 					case 4: /* Filter release time.*/
-						filterEnv.setReleaseTime( value << 5 );
+						filterEnv.setReleaseTime( ( value * value ) >> 2 );
 						break;
 					case 5: /* Portamento time.*/
-						if( value > 0 ) {
-							value = Maths.expScale( ( value << Maths.FP_SHIFT - 7 ), 10 );
-						}
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
-							voices[ idx ].setPortamentoTime( value >> ( Maths.FP_SHIFT - 10 ) );
+							voices[ idx ].setPortamentoTime( ( value * value ) >> 4 );
 						}
 						break;
 					case 6: /* Voice waveform.*/
@@ -241,26 +238,26 @@ public class Liquinth implements Synthesizer, AudioSource {
 						break;
 					case 7: /* Volume attack time. */
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
-							voices[ idx ].setVolAttack( value << 5 );
+							voices[ idx ].setVolAttack( ( value * value ) >> 2 );
 						}
 						break;
 					case 8: /* Volume release time. */
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
-							voices[ idx ].setVolRelease( value << 5 );
+							voices[ idx ].setVolRelease( ( value * value ) >> 2 );
 						}
 						break;
 					case 9: /* Detune. */
-						if( value > 0 ) {
-							value = ( value + 1 ) << ( Maths.FP_SHIFT - 7 );
-							value = Maths.expScale( value, 8 );
+						if( value < 61 ) {
+							value = ( value << Maths.FP_SHIFT ) / 720;
+						} else {
+							value = ( ( value - 55 ) << Maths.FP_SHIFT ) / 72;
 						}
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setOsc2Tuning( value );
 						}
 						break;
 					case 10: /* Vibrato speed. */
-						value = ( 128 - value ) << ( Maths.FP_SHIFT - 7 );
-						value = Maths.expScale( value, 11 );
+						value = Maths.expScale( Maths.FP_ONE - ( value << ( Maths.FP_SHIFT - 7 ) ), 11 );
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setLFOSpeed( value );
 						}
