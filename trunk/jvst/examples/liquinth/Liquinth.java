@@ -2,33 +2,30 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev14";
+	public static final String VERSION = "Liquinth a42dev15";
 	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20131227;
+	public static final int RELEASE_DATE = 20131229;
 
 	private static final int
-		LOG2_NUM_VOICES = 4, /* 16 voices.*/
-		NUM_VOICES = 1 << LOG2_NUM_VOICES;
-
-	private static final String[] controlNames = new String[] {
-		"Overdrive",
-		"Filter Cutoff",
-		"Filter Resonance",
-		"Filter Sustain Level",
-		"Filter Decay",
-		"Portamento Speed",
-		"Waveform",
-		"Attack",
-		"Release",
-		"Detune",
-		"Vibrato Speed",
-		"Vibrato Depth",
-		"Pulse Width",
-		"Timbre",
-		"Pulse Width Modulation",
-		"Sub Oscillator Level",
-		"Filter Attack"
-	};
+		CTRL_OVERDRIVE = 0,
+		CTRL_FILTER_CUTOFF = 1,
+		CTRL_FILTER_RESONANCE = 2,
+		CTRL_FILTER_ATTACK = 3,
+		CTRL_FILTER_SUSTAIN = 4,
+		CTRL_FILTER_DECAY = 5,
+		CTRL_PORTAMENTO = 6,
+		CTRL_WAVEFORM = 7,
+		CTRL_VOLUME_ATTACK = 8,
+		CTRL_VOLUME_RELEASE = 9,
+		CTRL_OSCILLATOR_DETUNE = 10,
+		CTRL_VIBRATO_SPEED = 11,
+		CTRL_VIBRATO_DEPTH = 12,
+		CTRL_PULSE_WIDTH = 13,
+		CTRL_PULSE_WIDTH_MODULATION = 14,
+		CTRL_SUB_OSCILLATOR = 15,
+		CTRL_TIMBRE = 16,
+		NUM_CONTROLLERS = 17,
+		NUM_VOICES = 16;
 
 	private MoogFilter filter;
 	private Envelope filterEnv;
@@ -41,18 +38,18 @@ public class Liquinth implements Synthesizer, AudioSource {
 		filter = new MoogFilter( sampleRate );
 		voices = new Voice[ NUM_VOICES ];
 		keyStatus = new byte[ 128 ];
-		controllers = new byte[ controlNames.length ];
+		controllers = new byte[ NUM_CONTROLLERS ];
 		filterEnv = new Envelope( sampleRate );
 		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 			voices[ idx ] = new Voice( sampleRate );
 			voices[ idx ].keyOn( idx );
 		}
 		allNotesOff( true );
-		setController( 0, 42 );
-		setController( 1, 127 );
-		for( int idx = 2; idx < controllers.length; idx++ ) {
+		for( int idx = 0; idx < controllers.length; idx++ ) {
 			setController( idx, 0 );
 		}
+		setController( CTRL_OVERDRIVE, 42 );
+		setController( CTRL_FILTER_CUTOFF, 127 );
 	}
 
 	public int getNumControllers() {
@@ -61,8 +58,24 @@ public class Liquinth implements Synthesizer, AudioSource {
 
 	public String getControllerName( int controller ) {
 		String name = "";
-		if( controller >= 0 && controller < controllers.length ) {
-			name = controlNames[ controller ];
+		switch( controller ) {
+			case CTRL_OVERDRIVE: name = "Overdrive"; break;
+			case CTRL_FILTER_CUTOFF: name = "Filter Cutoff"; break;
+			case CTRL_FILTER_RESONANCE: name = "Filter Resonance"; break;
+			case CTRL_FILTER_ATTACK: name = "Filter Attack"; break;
+			case CTRL_FILTER_SUSTAIN: name = "Filter Sustain Level"; break;
+			case CTRL_FILTER_DECAY: name = "Filter Decay"; break;
+			case CTRL_PORTAMENTO: name = "Portamento Speed"; break;
+			case CTRL_WAVEFORM: name = "Waveform"; break;
+			case CTRL_VOLUME_ATTACK: name = "Volume Attack"; break;
+			case CTRL_VOLUME_RELEASE: name = "Volume Release"; break;
+			case CTRL_OSCILLATOR_DETUNE: name = "Detune"; break;
+			case CTRL_VIBRATO_SPEED: name = "Vibrato Speed"; break;
+			case CTRL_VIBRATO_DEPTH: name = "Vibrato Depth"; break;
+			case CTRL_PULSE_WIDTH: name = "Pulse Width"; break;
+			case CTRL_PULSE_WIDTH_MODULATION: name = "Pulse Width Modulation"; break;
+			case CTRL_SUB_OSCILLATOR: name = "Sub Oscillator Level"; break;
+			case CTRL_TIMBRE: name = "Timbre"; break;
 		}
 		return name;
 	}
@@ -88,7 +101,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 			/* Handle filter envelope.*/
 			filterEnv.update( count );
 			filterCutoff1 += ( ( filterCutoffRate * count ) >> Maths.FP_SHIFT );
-			int alevel = controllers[ 3 ] << ( Maths.FP_SHIFT - 7 );
+			int alevel = controllers[ CTRL_FILTER_SUSTAIN ] << ( Maths.FP_SHIFT - 7 );
 			int cutoff = filterCutoff1 + ( ( filterEnv.getAmplitude() * alevel ) >> Maths.FP_SHIFT );
 			if( cutoff > Maths.FP_ONE ) {
 				cutoff = Maths.FP_ONE;
@@ -135,7 +148,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 				}
 			}
 			if( keyIsOn ) {
-				if( controllers[ 5 ] > 0 ) {
+				if( controllers[ CTRL_PORTAMENTO ] > 0 ) {
 					/* Portamento mode. */
 					if( portaVoice > -1 ) {
 						/* Only one voice should be active.*/
@@ -156,7 +169,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 			/* Key on */
 			if( portaVoice == 0 || key == highestKey ) {
 				/* Only retrigger in porta mode if new key is highest. */
-				if( controllers[ 16 ] == 0 ) {
+				if( controllers[ CTRL_FILTER_ATTACK ] == 0 ) {
 					/* No filter sustain if attack is zero.*/
 					filterEnv.setAmplitude( Maths.FP_MASK );
 					filterEnv.keyOff();
@@ -214,42 +227,45 @@ public class Liquinth implements Synthesizer, AudioSource {
 			if( controller >= 0 && controller < controllers.length ) {
 				controllers[ controller ] = ( byte ) value;
 				switch( controller ) {
-					case 0: /* Overdrive. */
+					case CTRL_OVERDRIVE:
 						value = value << ( Maths.FP_SHIFT - 6 );
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setVolume( value );
 						}
 						break;
-					case 1: /* Filter cutoff. */
+					case CTRL_FILTER_CUTOFF:
 						filterCutoff2 = ( value + 1 ) << ( Maths.FP_SHIFT - 7 );
 						break;
-					case 2: /* Filter resonance.*/
+					case CTRL_FILTER_RESONANCE:
 						filter.setResonance( value * 0.0314f );
 						break;
-					case 4: /* Filter release time.*/
+					case CTRL_FILTER_ATTACK:
+						filterEnv.setAttackTime( ( value * value ) >> 2 );
+						break;
+					case CTRL_FILTER_DECAY:
 						filterEnv.setReleaseTime( ( value * value ) >> 2 );
 						break;
-					case 5: /* Portamento time.*/
+					case CTRL_PORTAMENTO:
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setPortamentoTime( ( value * value ) >> 4 );
 						}
 						break;
-					case 6: /* Voice waveform.*/
+					case CTRL_WAVEFORM:
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setWaveform( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
 						}
 						break;
-					case 7: /* Volume attack time. */
+					case CTRL_VOLUME_ATTACK:
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setVolAttack( ( value * value ) >> 2 );
 						}
 						break;
-					case 8: /* Volume release time. */
+					case CTRL_VOLUME_RELEASE:
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setVolRelease( ( value * value ) >> 2 );
 						}
 						break;
-					case 9: /* Detune. */
+					case CTRL_OSCILLATOR_DETUNE:
 						if( value < 61 ) {
 							value = ( value << Maths.FP_SHIFT ) / 720;
 						} else {
@@ -259,13 +275,13 @@ public class Liquinth implements Synthesizer, AudioSource {
 							voices[ idx ].setOsc2Tuning( value );
 						}
 						break;
-					case 10: /* Vibrato speed. */
+					case CTRL_VIBRATO_SPEED:
 						value = Maths.expScale( Maths.FP_ONE - ( value << ( Maths.FP_SHIFT - 7 ) ), 11 );
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setLFOSpeed( value );
 						}
 						break;
-					case 11: /* Vibrato depth.*/
+					case CTRL_VIBRATO_DEPTH:
 						if( value > 0 ) {
 							value = Maths.expScale( value << ( Maths.FP_SHIFT - 7 ), 8 );
 						}
@@ -273,28 +289,25 @@ public class Liquinth implements Synthesizer, AudioSource {
 							voices[ idx ].setVibratoDepth( value );
 						}
 						break;
-					case 12: /* Pulse width.*/
+					case CTRL_PULSE_WIDTH:
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setPulseWidth( value << ( Maths.FP_SHIFT - 7 ) );
 						}
 						break;
-					case 13: /* Timbre.*/
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
-							voices[ idx ].setTimbre( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
-						}
-						break;
-					case 14: /* Pulse width modulation. */
+					case CTRL_PULSE_WIDTH_MODULATION:
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setPulseWidthModulationDepth( value << ( Maths.FP_SHIFT - 8 ) );
 						}
 						break;
-					case 15: /* Sub oscillator level. */
+					case CTRL_SUB_OSCILLATOR:
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setSubOscillatorLevel( value << ( Maths.FP_SHIFT - 7 ) );
 						}
 						break;
-					case 16: /* Filter attack time.*/
-						filterEnv.setAttackTime( ( value * value ) >> 2 );
+					case CTRL_TIMBRE:
+						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+							voices[ idx ].setTimbre( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
+						}
 						break;
 				}
 			}
@@ -310,26 +323,19 @@ public class Liquinth implements Synthesizer, AudioSource {
 
 	public int mapMIDIController( int controller ) {
 		switch( controller ) {
-			case 5: /* Portamento time. */
-				return 5;
-			case 70: /* Waveform. */
-				return 6;
-			case 71: /* Resonance. */
-				return 2;
-			case 72: /* Release. */
-				return 8;
-			case 73: /* Attack. */
-				return 7;
-			case 74: /* Cutoff. */
-				return 1;
-			default:
-				return controller - 20;
+			case 5:  return CTRL_PORTAMENTO;
+			case 70: return CTRL_WAVEFORM;
+			case 71: return CTRL_FILTER_RESONANCE;
+			case 72: return CTRL_VOLUME_RELEASE;
+			case 73: return CTRL_VOLUME_ATTACK;
+			case 74: return CTRL_FILTER_CUTOFF;
+			default: return controller - 20;
 		}
 	}
 	
 	public synchronized void setModWheel( int value ) {
 		// Hard coded to vibrato depth.
-		setController( 11, value );
+		setController( CTRL_VIBRATO_DEPTH, value );
 	}
 
 	public synchronized void allNotesOff( boolean soundOff ) {
@@ -338,19 +344,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 			voices[ idx ].keyOff( soundOff );
 		}
 		for( idx = 0; idx < 128; idx++ ) {
-			keyStatus[ idx ] = 0;
+			keyStatus[ idx ] = -1;
 		}
-	}
-
-	private static int downsample( int s, int[] buffer, int len ) {
-		// Convolve with kernel ( 0.25, 0.5, 0.25 ).
-		// Filter envelope is Sin^2( PI * f ) / ( PI * f )^2 where fs = 1.0.
-		for( int in = 0, out = 0; in < len; in += 2, out += 1 ) {
-			int a = s + ( buffer[ in ] >> 1 );
-			s = buffer[ in + 1 ] >> 2;
-			buffer[ out ] = a + s;
-		}
-		return s;
 	}
 }
-
