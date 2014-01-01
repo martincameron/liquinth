@@ -7,7 +7,7 @@ import javax.swing.event.*;
 
 public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private Synthesizer synthesizer;
-	private JComboBox c1AssignCb;
+	private JComboBox<Object> c1AssignCb;
 	private JSlider[] controllers;
 
 	public SynthesizerPanel( Synthesizer synth ) {
@@ -32,7 +32,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		add( new JLabel( "Modulation Wheel" ), gbc );
 		gbc.weightx = 1;
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
-		c1AssignCb = new JComboBox();
+		c1AssignCb = new JComboBox<Object>();
 		add( c1AssignCb, gbc );
 
 		numControllers = synth.getNumControllers();

@@ -10,19 +10,14 @@ public class AudioSelector extends JPanel {
 	private Player player;
 
 	public AudioSelector( Player player ) {
-		JComboBox combo;
-		GridBagLayout gbl;
-		GridBagConstraints gbc;
+		setLayout( new GridBagLayout() );
 
-		gbl = new GridBagLayout();
-		setLayout( gbl );
-
-		gbc = new GridBagConstraints();
+		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.insets = new Insets( 2, 2, 2, 2 );
 
 		add( new JLabel( "Audio Device" ), gbc );
-		combo = new JComboBox( AudioSystem.getMixerInfo() );
+		JComboBox<Object> combo = new JComboBox<Object>( AudioSystem.getMixerInfo() );
 		combo.addItemListener( new ComboListener() );
 		gbc.weightx = 1;
 		add( combo, gbc );

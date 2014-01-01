@@ -11,20 +11,16 @@ public class MidiSelector extends JPanel {
 	private MidiDevice midiDevice;
 
 	public MidiSelector( MidiReceiver receiver ) {
-		JComboBox combo;
-		GridBagLayout gbl;
-		GridBagConstraints gbc;
-
 		midiReceiver = receiver;
 		receiver.setChannel( 1 );
 
 		setLayout( new GridBagLayout() );
-		gbc = new GridBagConstraints();
+		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.insets = new Insets( 2, 2, 2, 2 );
 
 		add( new JLabel( "Midi Device" ), gbc );
-		combo = new JComboBox( MidiSystem.getMidiDeviceInfo() );
+		JComboBox<Object> combo = new JComboBox<Object>( MidiSystem.getMidiDeviceInfo() );
 		combo.insertItemAt( "None", 0 );
 		combo.setSelectedIndex( 0 );
 		combo.addItemListener( new DevComboListener() );
@@ -33,7 +29,7 @@ public class MidiSelector extends JPanel {
 
 		gbc.weightx = 0;
 		add( new JLabel( "Channel" ), gbc );
-		combo = new JComboBox( new Integer[] {
+		combo = new JComboBox<Object>( new Integer[] {
 			new Integer(  1 ), new Integer(  2 ), new Integer(  3 ), new Integer(  4 ),
 			new Integer(  5 ), new Integer(  6 ), new Integer(  7 ), new Integer(  8 ),
 			new Integer(  9 ), new Integer( 10 ), new Integer( 11 ), new Integer( 12 ),
