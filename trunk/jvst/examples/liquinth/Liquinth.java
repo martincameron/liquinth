@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev15";
-	public static final String AUTHOR = "(c)2013 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20131229;
+	public static final String VERSION = "Liquinth a42dev16";
+	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
+	public static final int RELEASE_DATE = 20140101;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -114,61 +114,51 @@ public class Liquinth implements Synthesizer, AudioSource {
 	}
 
 	public synchronized void noteOn( int key, int velocity ) {
-		int idx;
-		int portaVoice, assignedVoice, quietestVoice;
-		int highestKey, voiceKey, voiceVol, minVol;
-		boolean keyIsOn;
-		if( key < 0 || key > 127 ) {
-			return;
-		}
-		keyStatus[ key ] = 0;
-		if( velocity > 0 ) {
-			keyStatus[ key ] = 1;
-		}
-		/* Determine highest depressed key. */
-		highestKey = 128;
-		for( idx = 0; idx < 128; idx++ ) {
-			if( keyStatus[ idx ] > 0 ) {
-				highestKey = idx;
+		key = key & 0x7F;
+		velocity = velocity & 0x7F;
+		keyStatus[ key ] = ( byte ) velocity;
+		boolean portamento = controllers[ CTRL_PORTAMENTO ] > 0;
+		int highestKey = -1;
+		if( portamento ) {
+			/* Determine highest depressed key. */
+			for( int idx = 0; idx < 128; idx++ ) {
+				if( keyStatus[ idx ] > 0 ) {
+					highestKey = idx;
+				}
 			}
 		}
-		minVol = -1;
-		portaVoice = -1;
-		assignedVoice = -1;
-		quietestVoice = -1;
-		for( idx = 0; idx < NUM_VOICES; idx++ ) {
-			keyIsOn = voices[ idx ].keyIsOn();
-			voiceKey = voices[ idx ].getKey();
+		int assignedVoice = -1;
+		int quietestVoice = -1;
+		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
+			boolean keyIsOn = voices[ idx ].keyIsOn();
+			int voiceKey = voices[ idx ].getKey();
 			if( key == voiceKey ) {
 				/* Voice has this key already assigned to it. */
 				if( keyIsOn || assignedVoice < 0 ) {
-					/* Voices may have the same key. Prefer */
-					/* the keyed-on voice over a keyed off one. */
+					/* Prefer a keyed-on voice. */
 					assignedVoice = idx;
 				}
 			}
 			if( keyIsOn ) {
-				if( controllers[ CTRL_PORTAMENTO ] > 0 ) {
+				if( portamento ) {
 					/* Portamento mode. */
-					if( portaVoice > -1 ) {
+					if( assignedVoice >= 0 ) {
 						/* Only one voice should be active.*/
-						voices[ portaVoice ].keyOff( false );
+						voices[ assignedVoice ].keyOff( false );
 					}
-					portaVoice = idx;
+					assignedVoice = idx;
 				}
 			} else {
 				/* Test if this is the quietest. */
-				voiceVol = voices[ idx ].getVolume();
-				if( quietestVoice < 0 || voiceVol < minVol ) {
+				if( quietestVoice < 0 || voices[ idx ].getVolume() < voices[ quietestVoice ].getVolume() ) {
 					quietestVoice = idx;
-					minVol = voiceVol;
 				}
 			}
 		}
 		if( velocity > 0 ) {
 			/* Key on */
-			if( portaVoice == 0 || key == highestKey ) {
-				/* Only retrigger in porta mode if new key is highest. */
+			if( !portamento || key == highestKey ) {
+				/* Only retrigger filter in porta mode if new key is highest. */
 				if( controllers[ CTRL_FILTER_ATTACK ] == 0 ) {
 					/* No filter sustain if attack is zero.*/
 					filterEnv.setAmplitude( Maths.FP_MASK );
@@ -177,36 +167,26 @@ public class Liquinth implements Synthesizer, AudioSource {
 					filterEnv.keyOn();
 				}
 			}
-			if( portaVoice > -1 ) {
-				if( key == highestKey ) {
-					/* New key is the highest. */
-					voices[ portaVoice ].keyOn( key );
-				}
-			} else {
-				if( assignedVoice > -1 ) {
-					/* Re-key previously assigned voice. */
+			if( assignedVoice >= 0 ) {
+				if( !portamento || key == highestKey ) {
+					/* Re-key voice.*/
 					voices[ assignedVoice ].keyOn( key );
-				} else if( quietestVoice > -1 ) {
-					/* Allocate new voice.*/
-					voices[ quietestVoice ].keyOn( key );
 				}
+			} else if( quietestVoice >= 0 ) {
+				/* Allocate new voice.*/
+				voices[ quietestVoice ].keyOn( key );
 			}
 		} else {
 			/* Key off */
-			if( highestKey > 127 ) {
+			if( highestKey < 0 ) {
 				filterEnv.keyOff();
 			}
-			if( portaVoice > -1 ) {
-				if( highestKey > 127 ) {
-					/* Porta voice released.*/
-					voices[ portaVoice ].keyOff( false );
-				} else if( key > highestKey ) {
-					/* Highest key released, keys still down. */
-					voices[ portaVoice ].keyOn( highestKey );
-				}
-			} else {
-				if( assignedVoice > -1 ) {
-					/* Key off assigned voice. */
+			if( assignedVoice >= 0 ) {
+				if( portamento && highestKey >= 0 ) {
+					/* Keys still down in portamento mode.*/
+					voices[ assignedVoice ].keyOn( highestKey );
+				} else {
+					/* Key released.*/
 					voices[ assignedVoice ].keyOff( false );
 				}
 			}
