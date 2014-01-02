@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev16";
+	public static final String VERSION = "Liquinth a42dev17";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140101;
+	public static final int RELEASE_DATE = 20140102;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -132,25 +132,30 @@ public class Liquinth implements Synthesizer, AudioSource {
 		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 			boolean keyIsOn = voices[ idx ].keyIsOn();
 			int voiceKey = voices[ idx ].getKey();
-			if( key == voiceKey ) {
-				/* Voice has this key already assigned to it. */
-				if( keyIsOn || assignedVoice < 0 ) {
-					/* Prefer a keyed-on voice. */
-					assignedVoice = idx;
-				}
-			}
 			if( keyIsOn ) {
 				if( portamento ) {
-					/* Portamento mode. */
-					if( assignedVoice >= 0 ) {
-						/* Only one voice should be active.*/
-						voices[ assignedVoice ].keyOff( false );
+					/* Assign the highest keyed-on voice to portamento and key-off others.*/
+					if( assignedVoice < 0 || !voices[ assignedVoice ].keyIsOn() ) {
+						assignedVoice = idx;
+					} else {
+						if( voiceKey >= voices[ assignedVoice ].getKey() ) {
+							voices[ assignedVoice ].keyOff( false );
+							assignedVoice = idx;
+						} else {
+							voices[ idx ].keyOff( false );
+						}
 					}
+				} else if( voiceKey == key ) {
+					/* This voice is currently keyed-on at this key.*/
 					assignedVoice = idx;
 				}
 			} else {
-				/* Test if this is the quietest. */
+				if( assignedVoice < 0 && voiceKey == key ) {
+					/* This voice is currently keyed-off at this key. */
+					assignedVoice = idx;
+				}
 				if( quietestVoice < 0 || voices[ idx ].getVolume() < voices[ quietestVoice ].getVolume() ) {
+					/* This is the quietest un-keyed voice. */
 					quietestVoice = idx;
 				}
 			}
