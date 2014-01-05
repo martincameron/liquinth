@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev17";
+	public static final String VERSION = "Liquinth a42dev18";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140102;
+	public static final int RELEASE_DATE = 20140105;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -106,7 +106,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 			if( cutoff > Maths.FP_ONE ) {
 				cutoff = Maths.FP_ONE;
 			}
-			cutoff = Maths.expScale( cutoff, 8 );
+			cutoff = Maths.exp2( cutoff << 3 ) >> 8;
 			filter.setCutoff( cutoff / ( float ) Maths.FP_ONE );
 			filter.filter( outBuf, offset, count );
 			offset += count;
@@ -261,14 +261,15 @@ public class Liquinth implements Synthesizer, AudioSource {
 						}
 						break;
 					case CTRL_VIBRATO_SPEED:
-						value = Maths.expScale( Maths.FP_ONE - ( value << ( Maths.FP_SHIFT - 7 ) ), 11 );
+						value = ( 127 - value ) << ( Maths.FP_SHIFT - 7 );
+						value = Maths.exp2( ( value * 11 ) + ( 4 << Maths.FP_SHIFT ) ) >> Maths.FP_SHIFT;
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setLFOSpeed( value );
 						}
 						break;
 					case CTRL_VIBRATO_DEPTH:
 						if( value > 0 ) {
-							value = Maths.expScale( value << ( Maths.FP_SHIFT - 7 ), 8 );
+							value = Maths.exp2( value << ( Maths.FP_SHIFT - 4 ) ) >> 8;
 						}
 						for( idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setVibratoDepth( value );
