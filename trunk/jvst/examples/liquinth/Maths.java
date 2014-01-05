@@ -68,15 +68,6 @@ public class Maths {
 		return y;
 	}
 
-	/*
-		Convert a linear scale from 0 -> FP_ONE
-		to an exponential scale from FP_ONE/2^n -> FP_ONE,
-		which doubles every FP_ONE/n.
-	*/
-	public static int expScale( int x, int n ) {
-		return exp2( x * n ) >> n;
-	}
-
 	private static int interpolateTable( int[] table, int x ) {
 		int tabIdx, c, m;
 		tabIdx = x >> FP_SHIFT - TABLE_ACCURACY;
@@ -86,4 +77,3 @@ public class Maths {
 		return c + ( m >> FP_SHIFT - TABLE_ACCURACY );
 	}
 }
-
