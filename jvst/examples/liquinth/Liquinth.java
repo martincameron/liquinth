@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev18";
+	public static final String VERSION = "Liquinth a42dev19";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140105;
+	public static final int RELEASE_DATE = 20140109;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -119,12 +119,10 @@ public class Liquinth implements Synthesizer, AudioSource {
 		keyStatus[ key ] = ( byte ) velocity;
 		boolean portamento = controllers[ CTRL_PORTAMENTO ] > 0;
 		int highestKey = -1;
-		if( portamento ) {
-			/* Determine highest depressed key. */
-			for( int idx = 0; idx < 128; idx++ ) {
-				if( keyStatus[ idx ] > 0 ) {
-					highestKey = idx;
-				}
+		/* Determine highest depressed key. */
+		for( int idx = 0; idx < 128; idx++ ) {
+			if( keyStatus[ idx ] > 0 ) {
+				highestKey = idx;
 			}
 		}
 		int assignedVoice = -1;
