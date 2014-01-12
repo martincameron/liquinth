@@ -10,5 +10,10 @@ public interface Synthesizer {
 	public void setController( int controller, int value );
 	public void setModWheel( int value );
 	public void setPitchWheel( int value );
-	public int mapMIDIController( int controller );
+	public int getPortamentoController();
+	public int getWaveformController();
+	public int getAttackController();
+	public int getReleaseController();
+	public int getCutoffController();
+	public int getResonanceController();
 }
