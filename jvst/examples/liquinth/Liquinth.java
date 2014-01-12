@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev19";
+	public static final String VERSION = "Liquinth a42dev20";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140109;
+	public static final int RELEASE_DATE = 20140112;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -298,6 +298,30 @@ public class Liquinth implements Synthesizer, AudioSource {
 		}
 	}
 
+	public int getPortamentoController() {
+		return CTRL_PORTAMENTO;
+	}
+	
+	public int getWaveformController() {
+		return CTRL_WAVEFORM;
+	}
+
+	public int getAttackController() {
+		return CTRL_VOLUME_ATTACK;
+	}
+	
+	public int getReleaseController() {
+		return CTRL_VOLUME_RELEASE;
+	}
+	
+	public int getCutoffController() {
+		return CTRL_FILTER_CUTOFF;		
+	}
+	
+	public int getResonanceController() {
+		return CTRL_FILTER_RESONANCE;
+	}
+
 	public synchronized void setPitchWheel( int octaves ) {
 		int idx;
 		for( idx = 0; idx < NUM_VOICES; idx++ ) {
@@ -305,18 +329,6 @@ public class Liquinth implements Synthesizer, AudioSource {
 		}
 	}
 
-	public int mapMIDIController( int controller ) {
-		switch( controller ) {
-			case 5:  return CTRL_PORTAMENTO;
-			case 70: return CTRL_WAVEFORM;
-			case 71: return CTRL_FILTER_RESONANCE;
-			case 72: return CTRL_VOLUME_RELEASE;
-			case 73: return CTRL_VOLUME_ATTACK;
-			case 74: return CTRL_FILTER_CUTOFF;
-			default: return controller - 20;
-		}
-	}
-	
 	public synchronized void setModWheel( int value ) {
 		// Hard coded to vibrato depth.
 		setController( CTRL_VIBRATO_DEPTH, value );

@@ -91,8 +91,28 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		setController( c1AssignCb.getSelectedIndex(), value );
 	}
 
-	public int mapMIDIController( int controller ) {
-		return synthesizer.mapMIDIController( controller );
+	public int getPortamentoController() {
+		return synthesizer.getPortamentoController();
+	}
+	
+	public int getWaveformController() {
+		return synthesizer.getWaveformController();
+	}
+
+	public int getAttackController() {
+		return synthesizer.getAttackController();
+	}
+	
+	public int getReleaseController() {
+		return synthesizer.getReleaseController();
+	}
+	
+	public int getCutoffController() {
+		return synthesizer.getCutoffController();
+	}
+	
+	public int getResonanceController() {
+		return synthesizer.getResonanceController();
 	}
 
 	private class SliderListener implements ChangeListener {

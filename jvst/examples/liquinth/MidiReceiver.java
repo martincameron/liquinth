@@ -49,6 +49,24 @@ public class MidiReceiver implements Receiver {
 					case 1: /* Modulation wheel. */
 						synthesizer.setModWheel( ctrlValue );
 						break;
+					case 5: /* Portamento.*/
+						synthesizer.setController( synthesizer.getPortamentoController(), ctrlValue );
+						break;
+					case 70: /* Waveform.*/
+						synthesizer.setController( synthesizer.getWaveformController(), ctrlValue );
+						break;
+					case 71: /* Resonance.*/
+						synthesizer.setController( synthesizer.getResonanceController(), ctrlValue );
+						break;
+					case 72: /* Release. */
+						synthesizer.setController( synthesizer.getReleaseController(), ctrlValue );
+						break;
+					case 73: /* Attack.*/
+						synthesizer.setController( synthesizer.getAttackController(), ctrlValue );
+						break;
+					case 74: /* Cutoff. */
+						synthesizer.setController( synthesizer.getCutoffController(), ctrlValue );
+						break;
 					case 120: /* All sound off. */
 						synthesizer.allNotesOff( true );
 						break;
@@ -58,7 +76,7 @@ public class MidiReceiver implements Receiver {
 						synthesizer.allNotesOff( false );
 						break;
 					default:
-						synthesizer.setController( synthesizer.mapMIDIController( ctrlIndex ), ctrlValue );
+						synthesizer.setController( ctrlIndex - 20, ctrlValue );
 						break;
 				}				
 				break;
