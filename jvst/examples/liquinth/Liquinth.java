@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev20";
+	public static final String VERSION = "Liquinth a42dev21";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140112;
+	public static final int RELEASE_DATE = 20140113;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -30,13 +30,15 @@ public class Liquinth implements Synthesizer, AudioSource {
 	private MoogFilter filter;
 	private Envelope filterEnv;
 	private Voice[] voices;
+	private String[] programs;
 	private byte[] keyStatus, controllers;
-	private int sampleRate, filterCutoff1, filterCutoff2;
+	private int sampleRate, programIdx, filterCutoff1, filterCutoff2;
 
 	public Liquinth( int samplingRate ) {
 		sampleRate = samplingRate;
 		filter = new MoogFilter( sampleRate );
 		voices = new Voice[ NUM_VOICES ];
+		programs = new String[ 128 ];
 		keyStatus = new byte[ 128 ];
 		controllers = new byte[ NUM_CONTROLLERS ];
 		filterEnv = new Envelope( sampleRate );
@@ -45,11 +47,43 @@ public class Liquinth implements Synthesizer, AudioSource {
 			voices[ idx ].keyOn( idx );
 		}
 		allNotesOff( true );
+		programChange( 0 );
+	}
+
+	public String saveProgram( String name ) {
+		char[] params = new char[ controllers.length * 4 ];
 		for( int idx = 0; idx < controllers.length; idx++ ) {
-			setController( idx, 0 );
+			params[ idx * 4     ] = ( char ) ( '0' + controllers[ idx ] / 100 );
+			params[ idx * 4 + 1 ] = ( char ) ( '0' + controllers[ idx ] / 10 % 10 );
+			params[ idx * 4 + 2 ] = ( char ) ( '0' + controllers[ idx ] % 10 );
+			params[ idx * 4 + 3 ] = '|';
 		}
-		setController( CTRL_OVERDRIVE, 42 );
-		setController( CTRL_FILTER_CUTOFF, 127 );
+		return VERSION + '|' + new String( params ) + name;
+	}
+	
+	public void loadProgram( String program ) {
+		if( program.substring( 0, VERSION.length() ).equals( VERSION ) ) {
+			programs[ programIdx ] = program;
+		}
+	}
+	
+	public int programChange( int idx ) {
+		programIdx = idx & 0x7F;
+		String program = programs[ programIdx ];
+		if( program == null ) {
+			program = VERSION + "|042|127";
+		}
+		for( int ctlIdx = 0; ctlIdx < controllers.length; ctlIdx++ ) {
+			int value = 0;
+			int chrIdx = VERSION.length() + ctlIdx * 4;
+			if( chrIdx + 3 < program.length() && program.charAt( chrIdx ) == '|' ) {
+				value += ( program.charAt( chrIdx + 1 ) - '0' ) * 100;
+				value += ( program.charAt( chrIdx + 2 ) - '0' ) * 10;
+				value += ( program.charAt( chrIdx + 3 ) - '0' );
+			}
+			setController( ctlIdx, value & 0x7F );
+		}
+		return programIdx;
 	}
 
 	public int getNumControllers() {
@@ -196,6 +230,10 @@ public class Liquinth implements Synthesizer, AudioSource {
 		}
 	}
 
+	public synchronized void noteOff( int key ) {
+		noteOn( key, 0 );
+	}
+
 	public synchronized int getController( int controller ) {
 		int value = 0;
 		if( controller >= 0 && controller < controllers.length ) {
@@ -296,6 +334,10 @@ public class Liquinth implements Synthesizer, AudioSource {
 				}
 			}
 		}
+	}
+	
+	public void resetAllControllers() {
+		programChange( programIdx );
 	}
 
 	public int getPortamentoController() {
