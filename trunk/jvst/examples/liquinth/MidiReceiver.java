@@ -36,11 +36,17 @@ public class MidiReceiver implements Receiver {
 		}
 		switch( msgStatus ) {
 			case 0x8: /* Note off.*/
-				synthesizer.noteOn( msgData[ 1 ] & 0x7F, 0 );
+				synthesizer.noteOff( msgData[ 1 ] & 0x7F );
 				break;
 			case 0x9: /* Note on.*/
-				/* It seems note on with velocity = 0 is also note off.*/
-				synthesizer.noteOn( msgData[ 1 ] & 0x7F, msgData[ 2 ] & 0x7F );
+				int key = msgData[ 1 ] & 0x7F;
+				int vel = msgData[ 2 ] & 0x7F;
+				if( vel == 0 ) {
+					/* It seems note on with velocity = 0 is also note off.*/
+					synthesizer.noteOff( key );
+				} else {
+					synthesizer.noteOn( key, vel );
+				}
 				break;
 			case 0xB: /* Control change.*/
 				ctrlIndex = msgData[ 1 ] & 0x7F;
@@ -71,6 +77,7 @@ public class MidiReceiver implements Receiver {
 						synthesizer.allNotesOff( true );
 						break;
 					case 121: /* Reset all controllers. */
+						synthesizer.resetAllControllers();
 						break;
 					case 123: /* All notes off. */
 						synthesizer.allNotesOff( false );
@@ -81,7 +88,7 @@ public class MidiReceiver implements Receiver {
 				}				
 				break;
 			case 0xC: /* Program change.*/
-				/* program = msgData[ 1 ] & 0x7F; */
+				synthesizer.programChange( msgData[ 1 ] & 0x7F );
 				break;
 			case 0xE: /* Pitch wheel.*/
 				ctrlValue = ( msgData[ 1 ] & 0x7F ) | ( ( msgData[ 2 ] & 0x7F ) << 7 );

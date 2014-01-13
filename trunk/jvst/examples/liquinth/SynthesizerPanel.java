@@ -52,9 +52,25 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 			add( controllers[ idx ], gbc );
 		}
 	}
+
+	public String saveProgram( String name ) {
+		return synthesizer.saveProgram( name );
+	}
 	
+	public void loadProgram( String program ) {
+		synthesizer.loadProgram( program );
+	}
+	
+	public int programChange( int idx ) {
+		return synthesizer.programChange( idx );
+	}
+
 	public void noteOn( int key, int velocity ) {
 		synthesizer.noteOn( key, velocity );
+	}
+	
+	public void noteOff( int key ) {
+		synthesizer.noteOff( key );
 	}
 	
 	public void allNotesOff( boolean soundOff ) {
@@ -81,6 +97,10 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 				}
 			} );
 		}
+	}
+
+	public void resetAllControllers() {
+		synthesizer.resetAllControllers();
 	}
 
 	public void setPitchWheel( int value ) {
