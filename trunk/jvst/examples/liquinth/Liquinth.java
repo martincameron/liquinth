@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev21";
+	public static final String VERSION = "Liquinth a42dev22";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140113;
+	public static final int RELEASE_DATE = 20140115;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -32,7 +32,8 @@ public class Liquinth implements Synthesizer, AudioSource {
 	private Voice[] voices;
 	private String[] programs;
 	private byte[] keyStatus, controllers;
-	private int sampleRate, programIdx, filterCutoff1, filterCutoff2;
+	private int sampleRate, programIdx, modWheelController;
+	private int filterCutoff1, filterCutoff2;
 
 	public Liquinth( int samplingRate ) {
 		sampleRate = samplingRate;
@@ -371,9 +372,14 @@ public class Liquinth implements Synthesizer, AudioSource {
 		}
 	}
 
+	public synchronized void assignModWheel( int controller ) {
+		if( controller >= 0 && controller < controllers.length ) {
+			modWheelController = controller;
+		}
+	}
+
 	public synchronized void setModWheel( int value ) {
-		// Hard coded to vibrato depth.
-		setController( CTRL_VIBRATO_DEPTH, value );
+		setController( modWheelController, value );
 	}
 
 	public synchronized void allNotesOff( boolean soundOff ) {
