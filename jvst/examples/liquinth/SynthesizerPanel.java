@@ -2,54 +2,68 @@
 package jvst.examples.liquinth;
 
 import java.awt.*;
+import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
 public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private Synthesizer synthesizer;
-	private JComboBox<Object> c1AssignCb;
 	private JSlider[] controllers;
 
-	public SynthesizerPanel( Synthesizer synth ) {
-		int idx, numControllers, value;
-		String controlName;
-		GridBagLayout gbl;
-		GridBagConstraints gbc;
-		VirtualKeyboard keyboard;
-
+	public SynthesizerPanel( Synthesizer synth ) {	
 		synthesizer = synth;
-		keyboard = new VirtualKeyboard( synth );
+		VirtualKeyboard keyboard = new VirtualKeyboard( synth );
 
-		gbl = new GridBagLayout();
+		GridBagLayout gbl = new GridBagLayout();
 		setLayout( gbl );
 
-		gbc = new GridBagConstraints();
+		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.insets = new Insets( 2, 2, 2, 2 );
+		
+		gbc.weightx = 0;
+		gbc.gridwidth = 1;
+		add( new JLabel( "Program" ), gbc );
 
 		gbc.weightx = 0;
 		gbc.gridwidth = 1;
-		add( new JLabel( "Modulation Wheel" ), gbc );
+		add( new JSpinner( new SpinnerNumberModel( 0, 0, 127, 1 ) ), gbc );
+				
 		gbc.weightx = 1;
-		gbc.gridwidth = GridBagConstraints.REMAINDER;
-		c1AssignCb = new JComboBox<Object>();
-		add( c1AssignCb, gbc );
+		gbc.gridwidth = 1;
+		add( new JTextField(), gbc );
 
-		numControllers = synth.getNumControllers();
+		gbc.weightx = 0;
+		gbc.gridwidth = 1;
+		add( new JButton( "Store" ), gbc );
+
+		gbc.weightx = 0;
+		gbc.gridwidth = GridBagConstraints.REMAINDER;
+		add( new JLabel( "Mod" ), gbc );
+
+		int numControllers = synth.getNumControllers();
 		controllers = new JSlider[ numControllers ];
-		for( idx = 0; idx < numControllers; idx++ ) {
+		ButtonGroup buttonGroup = new ButtonGroup();
+		for( int idx = 0; idx < numControllers; idx++ ) {
 			gbc.weightx = 0;
-			gbc.gridwidth = 1;
-			controlName = synth.getControllerName( idx );
-			c1AssignCb.addItem( controlName );
-			add( new JLabel( controlName ), gbc );
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.gridwidth = 2;
+			add( new JLabel( synth.getControllerName( idx ) ), gbc );			
 			gbc.weightx = 1;
-			gbc.gridwidth = GridBagConstraints.REMAINDER;
-			value = synth.getController( idx );
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.gridwidth = 2;
+			int value = synth.getController( idx );
 			controllers[ idx ] = new JSlider( JSlider.HORIZONTAL, 0, 127, value );
 			controllers[ idx ].addChangeListener( new SliderListener( idx ) );
 			controllers[ idx ].addKeyListener( keyboard );
 			add( controllers[ idx ], gbc );
+			gbc.weightx = 0;
+			gbc.fill = GridBagConstraints.NONE;
+			gbc.gridwidth = GridBagConstraints.REMAINDER;
+			JRadioButton radioButton = new JRadioButton();
+			radioButton.addActionListener( new RadioListener( idx ) );
+			buttonGroup.add( radioButton );
+			add( radioButton, gbc );
 		}
 	}
 
@@ -107,8 +121,13 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		synthesizer.setPitchWheel( value );
 	}
 	
+	public void assignModWheel( int controller ) {
+// TODO: update UI.
+		synthesizer.assignModWheel( controller );
+	}
+	
 	public void setModWheel( int value ) {
-		setController( c1AssignCb.getSelectedIndex(), value );
+		synthesizer.setModWheel( value );
 	}
 
 	public int getPortamentoController() {
@@ -133,6 +152,18 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	
 	public int getResonanceController() {
 		return synthesizer.getResonanceController();
+	}
+
+	private class RadioListener implements ActionListener {
+		private int controller;
+		
+		public RadioListener( int controlIdx ) {
+			controller = controlIdx;
+		}
+
+		public void actionPerformed( ActionEvent e ) {
+			synthesizer.assignModWheel( controller );
+		}	
 	}
 
 	private class SliderListener implements ChangeListener {
