@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev22";
+	public static final String VERSION = "Liquinth a42dev23";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140115;
+	public static final int RELEASE_DATE = 20140118;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -32,7 +32,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 	private Voice[] voices;
 	private String[] programs;
 	private byte[] keyStatus, controllers;
-	private int sampleRate, programIdx, modWheelController;
+	private int sampleRate, programIdx, modulationControlIdx;
 	private int filterCutoff1, filterCutoff2;
 
 	public Liquinth( int samplingRate ) {
@@ -49,42 +49,6 @@ public class Liquinth implements Synthesizer, AudioSource {
 		}
 		allNotesOff( true );
 		programChange( 0 );
-	}
-
-	public String saveProgram( String name ) {
-		char[] params = new char[ controllers.length * 4 ];
-		for( int idx = 0; idx < controllers.length; idx++ ) {
-			params[ idx * 4     ] = ( char ) ( '0' + controllers[ idx ] / 100 );
-			params[ idx * 4 + 1 ] = ( char ) ( '0' + controllers[ idx ] / 10 % 10 );
-			params[ idx * 4 + 2 ] = ( char ) ( '0' + controllers[ idx ] % 10 );
-			params[ idx * 4 + 3 ] = '|';
-		}
-		return VERSION + '|' + new String( params ) + name;
-	}
-	
-	public void loadProgram( String program ) {
-		if( program.substring( 0, VERSION.length() ).equals( VERSION ) ) {
-			programs[ programIdx ] = program;
-		}
-	}
-	
-	public int programChange( int idx ) {
-		programIdx = idx & 0x7F;
-		String program = programs[ programIdx ];
-		if( program == null ) {
-			program = VERSION + "|042|127";
-		}
-		for( int ctlIdx = 0; ctlIdx < controllers.length; ctlIdx++ ) {
-			int value = 0;
-			int chrIdx = VERSION.length() + ctlIdx * 4;
-			if( chrIdx + 3 < program.length() && program.charAt( chrIdx ) == '|' ) {
-				value += ( program.charAt( chrIdx + 1 ) - '0' ) * 100;
-				value += ( program.charAt( chrIdx + 2 ) - '0' ) * 10;
-				value += ( program.charAt( chrIdx + 3 ) - '0' );
-			}
-			setController( ctlIdx, value & 0x7F );
-		}
-		return programIdx;
 	}
 
 	public int getNumControllers() {
@@ -371,15 +335,15 @@ public class Liquinth implements Synthesizer, AudioSource {
 			voices[ idx ].setPitchWheel( octaves );
 		}
 	}
-
-	public synchronized void assignModWheel( int controller ) {
-		if( controller >= 0 && controller < controllers.length ) {
-			modWheelController = controller;
+	
+	public synchronized void setModulationController( int controlIdx ) {
+		if( controlIdx >= 0 && controlIdx < controllers.length ) {
+			modulationControlIdx = controlIdx;
 		}
 	}
-
-	public synchronized void setModWheel( int value ) {
-		setController( modWheelController, value );
+	
+	public synchronized int getModulationController() {
+		return modulationControlIdx;
 	}
 
 	public synchronized void allNotesOff( boolean soundOff ) {
@@ -390,5 +354,62 @@ public class Liquinth implements Synthesizer, AudioSource {
 		for( idx = 0; idx < 128; idx++ ) {
 			keyStatus[ idx ] = -1;
 		}
+	}
+	
+	public int programChange( int progIdx ) {
+		programIdx = progIdx & 0x7F;
+		String program = programs[ programIdx ];
+		for( int ctlIdx = 0; ctlIdx < controllers.length; ctlIdx++ ) {
+			int chrIdx = VERSION.length() + ctlIdx * 4;
+			if( program != null && chrIdx + 3 < program.length() && program.charAt( chrIdx ) == '|' ) {
+				int value = ( program.charAt( chrIdx + 1 ) - '0' ) * 100;
+				value += ( program.charAt( chrIdx + 2 ) - '0' ) * 10;
+				value += ( program.charAt( chrIdx + 3 ) - '0' );
+				setController( ctlIdx, value & 0x7F );
+			} else if( ctlIdx == CTRL_OVERDRIVE ) {
+				setController( ctlIdx, 42 );
+			} else if( ctlIdx == CTRL_FILTER_CUTOFF ) {
+				setController( ctlIdx, 127 );
+			} else {
+				setController( ctlIdx, 0 );
+			}
+		}
+		return programIdx;
+	}
+
+	public String getProgramName( int progIdx ) {
+		String name = "";
+		String program = programs[ progIdx ];
+		if( program != null ) {
+			name = program.substring( program.lastIndexOf( '|' ) + 1 );
+		}
+		return name;
+	}
+	
+	public void storeProgram( String name )	{
+		char[] params = new char[ controllers.length * 4 ];
+		for( int idx = 0; idx < controllers.length; idx++ ) {
+			params[ idx * 4     ] = ( char ) ( '0' + controllers[ idx ] / 100 );
+			params[ idx * 4 + 1 ] = ( char ) ( '0' + controllers[ idx ] / 10 % 10 );
+			params[ idx * 4 + 2 ] = ( char ) ( '0' + controllers[ idx ] % 10 );
+			params[ idx * 4 + 3 ] = '|';
+		}
+		programs[ programIdx ] = VERSION + '|' + new String( params ) + name;
+	}
+		
+	public boolean loadProgram( String program ) {
+		if( program.substring( 0, VERSION.length() ).equals( VERSION ) ) {
+			programs[ programIdx ] = program;
+			return true;
+		}
+		return false;
+	}
+	
+	public String saveProgram() {
+		String program = VERSION + '|';
+		if( programs[ programIdx ] != null ) {
+			program = programs[ programIdx ];
+		}
+		return program;
 	}
 }

@@ -53,7 +53,7 @@ public class MidiReceiver implements Receiver {
 				ctrlValue = msgData[ 2 ] & 0x7F;
 				switch( ctrlIndex ) {
 					case 1: /* Modulation wheel. */
-						synthesizer.setModWheel( ctrlValue );
+						synthesizer.setController( synthesizer.getModulationController(), ctrlValue );
 						break;
 					case 5: /* Portamento.*/
 						synthesizer.setController( synthesizer.getPortamentoController(), ctrlValue );
