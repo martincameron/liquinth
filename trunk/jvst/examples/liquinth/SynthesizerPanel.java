@@ -9,6 +9,7 @@ import javax.swing.event.*;
 public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private Synthesizer synthesizer;
 	private JSlider[] controllers;
+	private JRadioButton[] modulationAssign;
 
 	public SynthesizerPanel( Synthesizer synth ) {	
 		synthesizer = synth;
@@ -43,6 +44,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 
 		int numControllers = synth.getNumControllers();
 		controllers = new JSlider[ numControllers ];
+		modulationAssign = new JRadioButton[ numControllers ];
 		ButtonGroup buttonGroup = new ButtonGroup();
 		for( int idx = 0; idx < numControllers; idx++ ) {
 			gbc.weightx = 0;
@@ -60,23 +62,11 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 			gbc.weightx = 0;
 			gbc.fill = GridBagConstraints.NONE;
 			gbc.gridwidth = GridBagConstraints.REMAINDER;
-			JRadioButton radioButton = new JRadioButton();
-			radioButton.addActionListener( new RadioListener( idx ) );
-			buttonGroup.add( radioButton );
-			add( radioButton, gbc );
+			modulationAssign[ idx ] = new JRadioButton();
+			modulationAssign[ idx ].addActionListener( new RadioListener( idx ) );
+			buttonGroup.add( modulationAssign[ idx ] );
+			add( modulationAssign[ idx ], gbc );
 		}
-	}
-
-	public String saveProgram( String name ) {
-		return synthesizer.saveProgram( name );
-	}
-	
-	public void loadProgram( String program ) {
-		synthesizer.loadProgram( program );
-	}
-	
-	public int programChange( int idx ) {
-		return synthesizer.programChange( idx );
 	}
 
 	public void noteOn( int key, int velocity ) {
@@ -121,13 +111,18 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		synthesizer.setPitchWheel( value );
 	}
 	
-	public void assignModWheel( int controller ) {
-// TODO: update UI.
-		synthesizer.assignModWheel( controller );
+	public void setModulationController( final int controlIdx ) {
+		if( controlIdx >= 0 && controlIdx < controllers.length ) {
+			SwingUtilities.invokeLater( new Runnable() {
+				public void run() {
+					modulationAssign[ controlIdx ].doClick();
+				}
+			} );
+		}
 	}
 	
-	public void setModWheel( int value ) {
-		synthesizer.setModWheel( value );
+	public int getModulationController() {
+		return synthesizer.getModulationController();
 	}
 
 	public int getPortamentoController() {
@@ -154,6 +149,26 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		return synthesizer.getResonanceController();
 	}
 
+	public int programChange( int progIdx ) {
+		return synthesizer.programChange( progIdx );
+	}
+
+	public String getProgramName( int progIdx ) {
+		return synthesizer.getProgramName( progIdx );
+	}
+	
+	public void storeProgram( String name ) {
+		synthesizer.storeProgram( name );
+	}
+	
+	public boolean loadProgram( String program ) {
+		return synthesizer.loadProgram( program );
+	}
+	
+	public String saveProgram() {
+		return synthesizer.saveProgram();
+	}
+
 	private class RadioListener implements ActionListener {
 		private int controller;
 		
@@ -162,7 +177,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		}
 
 		public void actionPerformed( ActionEvent e ) {
-			synthesizer.assignModWheel( controller );
+			synthesizer.setModulationController( controller );
 		}	
 	}
 
