@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev23";
+	public static final String VERSION = "Liquinth a42dev24";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140118;
+	public static final int RELEASE_DATE = 20140120;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -359,29 +359,27 @@ public class Liquinth implements Synthesizer, AudioSource {
 	public int programChange( int progIdx ) {
 		programIdx = progIdx & 0x7F;
 		String program = programs[ programIdx ];
-		for( int ctlIdx = 0; ctlIdx < controllers.length; ctlIdx++ ) {
-			int chrIdx = VERSION.length() + ctlIdx * 4;
-			if( program != null && chrIdx + 3 < program.length() && program.charAt( chrIdx ) == '|' ) {
-				int value = ( program.charAt( chrIdx + 1 ) - '0' ) * 100;
-				value += ( program.charAt( chrIdx + 2 ) - '0' ) * 10;
-				value += ( program.charAt( chrIdx + 3 ) - '0' );
-				setController( ctlIdx, value & 0x7F );
-			} else if( ctlIdx == CTRL_OVERDRIVE ) {
-				setController( ctlIdx, 42 );
-			} else if( ctlIdx == CTRL_FILTER_CUTOFF ) {
-				setController( ctlIdx, 127 );
-			} else {
-				setController( ctlIdx, 0 );
+		if( program == null ) program = saveProgram();		
+		int strIdx = VERSION.length() + 1;
+		for( int ctrlIdx = 0; ctrlIdx < controllers.length; ctrlIdx++ ) {
+			int value = 0;
+			if( program != null ) {
+				char chr = '0';
+				while( strIdx < program.length() && chr >= '0' && chr <= '9' ) {
+					value = value * 10 + chr - '0';
+					chr = program.charAt( strIdx++ );
+				}
 			}
+			setController( ctrlIdx, value & 0x7F );
 		}
 		return programIdx;
 	}
 
 	public String getProgramName( int progIdx ) {
 		String name = "";
-		String program = programs[ progIdx ];
+		String program = programs[ progIdx & 0x7F ];
 		if( program != null ) {
-			name = program.substring( program.lastIndexOf( '|' ) + 1 );
+			name = program.substring( program.indexOf( ']' ) + 1 );
 		}
 		return name;
 	}
@@ -389,12 +387,12 @@ public class Liquinth implements Synthesizer, AudioSource {
 	public void storeProgram( String name )	{
 		char[] params = new char[ controllers.length * 4 ];
 		for( int idx = 0; idx < controllers.length; idx++ ) {
-			params[ idx * 4     ] = ( char ) ( '0' + controllers[ idx ] / 100 );
-			params[ idx * 4 + 1 ] = ( char ) ( '0' + controllers[ idx ] / 10 % 10 );
-			params[ idx * 4 + 2 ] = ( char ) ( '0' + controllers[ idx ] % 10 );
-			params[ idx * 4 + 3 ] = '|';
+			params[ idx * 4 ] = idx > 0 ? ',' : '[';
+			params[ idx * 4 + 1 ] = ( char ) ( '0' + controllers[ idx ] / 100 );
+			params[ idx * 4 + 2 ] = ( char ) ( '0' + controllers[ idx ] / 10 % 10 );
+			params[ idx * 4 + 3 ] = ( char ) ( '0' + controllers[ idx ] % 10 );
 		}
-		programs[ programIdx ] = VERSION + '|' + new String( params ) + name;
+		programs[ programIdx ] = VERSION + new String( params ) + ']' + name;
 	}
 		
 	public boolean loadProgram( String program ) {
@@ -406,7 +404,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 	}
 	
 	public String saveProgram() {
-		String program = VERSION + '|';
+		String program = VERSION + "[042,127]Saw";
 		if( programs[ programIdx ] != null ) {
 			program = programs[ programIdx ];
 		}
