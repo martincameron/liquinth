@@ -9,44 +9,53 @@ import javax.swing.event.*;
 public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private Synthesizer synthesizer;
 	private JSlider[] controllers;
+	private SpinnerNumberModel programChangeSpinnerModel;
+	private JTextField programNameField;
 	private JRadioButton[] modulationAssign;
 
 	public SynthesizerPanel( Synthesizer synth ) {	
 		synthesizer = synth;
 		VirtualKeyboard keyboard = new VirtualKeyboard( synth );
-
 		GridBagLayout gbl = new GridBagLayout();
 		setLayout( gbl );
-
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.insets = new Insets( 2, 2, 2, 2 );
-		
 		gbc.weightx = 0;
 		gbc.gridwidth = 1;
 		add( new JLabel( "Program" ), gbc );
-
 		gbc.weightx = 0;
 		gbc.gridwidth = 1;
-		add( new JSpinner( new SpinnerNumberModel( 0, 0, 127, 1 ) ), gbc );
-				
+		programChangeSpinnerModel = new SpinnerNumberModel( 0, 0, 127, 1 );
+		JSpinner programChangeSpinner = new JSpinner( programChangeSpinnerModel );
+		programChangeSpinner.addChangeListener( new ChangeListener() {
+			public void stateChanged( ChangeEvent e ) {
+				programChange( programChangeSpinnerModel.getNumber().intValue() );
+			}
+		} );
+		add( programChangeSpinner, gbc );	
 		gbc.weightx = 1;
 		gbc.gridwidth = 1;
-		add( new JTextField(), gbc );
-
+		programNameField = new JTextField();
+		add( programNameField, gbc );
 		gbc.weightx = 0;
 		gbc.gridwidth = 1;
-		add( new JButton( "Store" ), gbc );
-
+		JButton storeButton = new JButton( "Store" );
+		storeButton.addActionListener( new ActionListener() {
+			public void actionPerformed( ActionEvent e ) {
+				synthesizer.storeProgram( programNameField.getText() );
+			}
+		} );
+		add( storeButton, gbc );
 		gbc.weightx = 0;
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		add( new JLabel( "Mod" ), gbc );
-
 		int numControllers = synth.getNumControllers();
 		controllers = new JSlider[ numControllers ];
 		modulationAssign = new JRadioButton[ numControllers ];
 		ButtonGroup buttonGroup = new ButtonGroup();
 		for( int idx = 0; idx < numControllers; idx++ ) {
+			ControllerListener controllerListener = new ControllerListener( idx );
 			gbc.weightx = 0;
 			gbc.fill = GridBagConstraints.HORIZONTAL;
 			gbc.gridwidth = 2;
@@ -56,17 +65,18 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 			gbc.gridwidth = 2;
 			int value = synth.getController( idx );
 			controllers[ idx ] = new JSlider( JSlider.HORIZONTAL, 0, 127, value );
-			controllers[ idx ].addChangeListener( new SliderListener( idx ) );
+			controllers[ idx ].addChangeListener( controllerListener );
 			controllers[ idx ].addKeyListener( keyboard );
 			add( controllers[ idx ], gbc );
 			gbc.weightx = 0;
 			gbc.fill = GridBagConstraints.NONE;
 			gbc.gridwidth = GridBagConstraints.REMAINDER;
 			modulationAssign[ idx ] = new JRadioButton();
-			modulationAssign[ idx ].addActionListener( new RadioListener( idx ) );
+			modulationAssign[ idx ].addActionListener( controllerListener );
 			buttonGroup.add( modulationAssign[ idx ] );
 			add( modulationAssign[ idx ], gbc );
 		}
+		programChange( 0 );
 	}
 
 	public void noteOn( int key, int velocity ) {
@@ -149,8 +159,19 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		return synthesizer.getResonanceController();
 	}
 
-	public int programChange( int progIdx ) {
-		return synthesizer.programChange( progIdx );
+	public int programChange( int programIdx ) {
+		final int progIdx = synthesizer.programChange( programIdx );
+		SwingUtilities.invokeLater( new Runnable() {
+			public void run() {
+				programChangeSpinnerModel.setValue( Integer.valueOf( progIdx ) );
+				programNameField.setText( synthesizer.getProgramName( progIdx ) );
+				modulationAssign[ synthesizer.getModulationController() ].setSelected( true );
+				for( int ctrlIdx = 0; ctrlIdx < controllers.length; ctrlIdx++ ) {
+					controllers[ ctrlIdx ].setValue( synthesizer.getController( ctrlIdx ) );
+				}
+			}
+		} );		
+		return progIdx;
 	}
 
 	public String getProgramName( int progIdx ) {
@@ -169,29 +190,19 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		return synthesizer.saveProgram();
 	}
 
-	private class RadioListener implements ActionListener {
-		private int controller;
-		
-		public RadioListener( int controlIdx ) {
-			controller = controlIdx;
-		}
-
-		public void actionPerformed( ActionEvent e ) {
-			synthesizer.setModulationController( controller );
-		}	
-	}
-
-	private class SliderListener implements ChangeListener {
+	private class ControllerListener implements ChangeListener, ActionListener {
 		private int controller;
 
-		public SliderListener( int controlIdx ) {
+		public ControllerListener( int controlIdx ) {
 			controller = controlIdx;
 		}
 
 		public void stateChanged( ChangeEvent e ) {
-			int value;
-			value = controllers[ controller ].getValue();
-			synthesizer.setController( controller, value );
+			synthesizer.setController( controller, controllers[ controller ].getValue() );
 		}
+		
+		public void actionPerformed( ActionEvent e ) {
+			synthesizer.setModulationController( controller );
+		}	
 	}
 }
