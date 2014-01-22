@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer, AudioSource {
-	public static final String VERSION = "Liquinth a42dev25";
+	public static final String VERSION = "Liquinth a42dev26";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140121;
+	public static final int RELEASE_DATE = 20140122;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -32,7 +32,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 	private Voice[] voices;
 	private String[] programs;
 	private byte[] keyStatus, controllers;
-	private int sampleRate, programIdx, modulationControlIdx;
+	private int sampleRate, programIdx, modCtrlIdx;
 	private int filterCutoff1, filterCutoff2;
 
 	public Liquinth( int samplingRate ) {
@@ -301,7 +301,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 		}
 	}
 	
-	public void resetAllControllers() {
+	public synchronized void resetAllControllers() {
 		programChange( programIdx );
 	}
 
@@ -336,30 +336,32 @@ public class Liquinth implements Synthesizer, AudioSource {
 		}
 	}
 	
-	public synchronized void setModulationController( int controlIdx ) {
+	public void setModulationController( int controlIdx ) {
 		if( controlIdx >= 0 && controlIdx < controllers.length ) {
-			modulationControlIdx = controlIdx;
+			modCtrlIdx = controlIdx;
 		}
 	}
 	
-	public synchronized int getModulationController() {
-		return modulationControlIdx;
+	public int getModulationController() {
+		return modCtrlIdx;
 	}
 
 	public synchronized void allNotesOff( boolean soundOff ) {
-		int idx;
-		for( idx = 0; idx < NUM_VOICES; idx++ ) {
+		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 			voices[ idx ].keyOff( soundOff );
 		}
-		for( idx = 0; idx < 128; idx++ ) {
-			keyStatus[ idx ] = -1;
+		for( int idx = 0; idx < 128; idx++ ) {
+			keyStatus[ idx ] = 0;
 		}
 	}
-	
-	public int programChange( int progIdx ) {
+
+	public synchronized int programChange( int progIdx ) {
 		programIdx = progIdx & 0x7F;
 		String program = programs[ programIdx ];
-		if( program == null ) program = saveProgram();		
+		if( program == null ) {
+			program = saveProgram();
+		}
+		modCtrlIdx = 0;
 		int strIdx = VERSION.length() + 1;
 		for( int ctrlIdx = 0; ctrlIdx < controllers.length; ctrlIdx++ ) {
 			int value = 0;
@@ -369,13 +371,16 @@ public class Liquinth implements Synthesizer, AudioSource {
 					value = value * 10 + chr - '0';
 					chr = program.charAt( strIdx++ );
 				}
+				if( chr == ';' ) {
+					modCtrlIdx = ctrlIdx + 1;
+				}
 			}
 			setController( ctrlIdx, value & 0x7F );
 		}
 		return programIdx;
 	}
 
-	public String getProgramName( int progIdx ) {
+	public synchronized String getProgramName( int progIdx ) {
 		String name = "";
 		String program = programs[ progIdx & 0x7F ];
 		if( program != null ) {
@@ -384,10 +389,10 @@ public class Liquinth implements Synthesizer, AudioSource {
 		return name;
 	}
 	
-	public void storeProgram( String name )	{
+	public synchronized void storeProgram( String name )	{
 		char[] params = new char[ controllers.length * 4 ];
 		for( int idx = 0; idx < controllers.length; idx++ ) {
-			params[ idx * 4 ] = idx > 0 ? ',' : '[';
+			params[ idx * 4 ] = idx > 0 ? ( idx == modCtrlIdx ? ';' : ',' ) : '[';
 			params[ idx * 4 + 1 ] = ( char ) ( '0' + controllers[ idx ] / 100 );
 			params[ idx * 4 + 2 ] = ( char ) ( '0' + controllers[ idx ] / 10 % 10 );
 			params[ idx * 4 + 3 ] = ( char ) ( '0' + controllers[ idx ] % 10 );
@@ -395,7 +400,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 		programs[ programIdx ] = VERSION + new String( params ) + ']' + name;
 	}
 		
-	public boolean loadProgram( String program ) {
+	public synchronized boolean loadProgram( String program ) {
 		if( program.substring( 0, VERSION.length() ).equals( VERSION ) ) {
 			programs[ programIdx ] = program;
 			return true;
@@ -403,7 +408,7 @@ public class Liquinth implements Synthesizer, AudioSource {
 		return false;
 	}
 	
-	public String saveProgram() {
+	public synchronized String saveProgram() {
 		String program = VERSION + "[042,127]Saw";
 		if( programs[ programIdx ] != null ) {
 			program = programs[ programIdx ];
