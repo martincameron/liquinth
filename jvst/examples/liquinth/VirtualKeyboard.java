@@ -83,7 +83,7 @@ public class VirtualKeyboard implements KeyListener {
 		} else if( key >= 2 ) { /* Set Octave.*/
 			octave = key - 2;
 			synthesizer.allNotesOff( false );
-		} else { /* All notes off.*/
+		} else if( key >= 0 ) { /* All notes off.*/
 			synthesizer.allNotesOff( key > 0 );
 		}
 	}
