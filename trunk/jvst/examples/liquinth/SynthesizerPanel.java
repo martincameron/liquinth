@@ -189,6 +189,10 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	public String saveProgram() {
 		return synthesizer.saveProgram();
 	}
+	
+	public void getAudio( int[] mixBuf, int length ) {
+		synthesizer.getAudio( mixBuf, length );
+	}
 
 	private class ControllerListener implements ChangeListener, ActionListener {
 		private int controller;
