@@ -24,4 +24,5 @@ public interface Synthesizer {
 	public void storeProgram( String name );
 	public boolean loadProgram( String program );
 	public String saveProgram();
+	public void getAudio( int[] mixBuf, int length );
 }

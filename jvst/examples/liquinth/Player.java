@@ -14,15 +14,15 @@ public class Player implements Runnable {
 	private static final int BUF_FRAMES = 1024;
 	private static final int BUF_BYTES = BUF_FRAMES * 2;
 
-	private AudioSource audioSource;
+	private Synthesizer audioSource;
 	private AudioFormat audioFormat;
 	private SourceDataLine.Info lineInfo;
 	private Mixer audioMixer;
 
 	private boolean play, running;
 
-	public Player( AudioSource source ) {
-		audioSource = source;
+	public Player( Synthesizer synthesizer ) {
+		audioSource = synthesizer;
 		audioFormat = new AudioFormat( SAMPLING_RATE, 16, 1, true, false );
 		lineInfo = new DataLine.Info( SourceDataLine.class, audioFormat, BUF_BYTES );
 	}

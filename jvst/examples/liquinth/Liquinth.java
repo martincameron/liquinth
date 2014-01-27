@@ -1,7 +1,7 @@
 
 package jvst.examples.liquinth;
 
-public class Liquinth implements Synthesizer, AudioSource {
+public class Liquinth implements Synthesizer {
 	public static final String VERSION = "Liquinth a42dev26";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 	public static final int RELEASE_DATE = 20140122;
