@@ -5,13 +5,9 @@ import jvst.wrapper.*;
 import jvst.wrapper.valueobjects.*;
 
 public class LiquinthVST extends VSTPluginAdapter {
-	private static final int
-		NUM_PROGRAMS = 16,
-		MIX_BUF_FRAMES = 4096;
-
+	private static final int MIX_BUF_FRAMES = 4096;
 	private Synthesizer synthesizer;
 	private MidiReceiver midiReceiver;
-	private Program[] programs;
 	private int currentProgram;
 	private int[] mixBuf;
 
@@ -19,7 +15,6 @@ public class LiquinthVST extends VSTPluginAdapter {
 		super( wrapper );
 		setSampleRate( 48000 );
 		mixBuf = new int[ MIX_BUF_FRAMES ];
-		programs = new Program[ NUM_PROGRAMS ];
 		setNumInputs( 0 );
 		setNumOutputs( 1 );
 		canProcessReplacing( true );
@@ -31,9 +26,6 @@ public class LiquinthVST extends VSTPluginAdapter {
 	public SynthesizerPanel initGui() {
 		synthesizer = new SynthesizerPanel( synthesizer );
 		midiReceiver = new MidiReceiver( synthesizer );
-		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
-			programs[ prgIdx ] = new Program( "Blank " + prgIdx, synthesizer );
-		}
 		return ( SynthesizerPanel ) synthesizer;
 	}
 	
@@ -41,24 +33,15 @@ public class LiquinthVST extends VSTPluginAdapter {
 		synthesizer.setController( ctrlIdx, value );
 	}
 
-	/* Deprecated as of VST 2.4 */
-	public void resume() {
-		wantEvents( 1 );
-	}
-
 	public void setSampleRate( float sampleRate ) {
 		synthesizer = new Liquinth( ( int ) sampleRate );
 		midiReceiver = new MidiReceiver( synthesizer );
-		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
-			programs[ prgIdx ] = new Program( "Blank " + prgIdx, synthesizer );
-		}
+		setProgram( 0 );
 	}
 
 	public void setProgram( int index ) {
-		if( index < 0 || index >= NUM_PROGRAMS ) return;
-		programs[ currentProgram ].store();
-		currentProgram = index;
-		programs[ currentProgram ].load();
+		synthesizer.storeProgram( synthesizer.getProgramName( currentProgram ) );
+		currentProgram = synthesizer.programChange( index );
 	}
 
 	public void setParameter( int index, float value ) {
@@ -70,11 +53,11 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public void setProgramName( String name ) {
-		programs[ currentProgram ].name = name;
+		synthesizer.storeProgram( name );
 	}
 
 	public String getProgramName() {
-		return programs[ currentProgram ].name;
+		return synthesizer.getProgramName( currentProgram );
 	}
 
 	public String getParameterLabel( int index ) {
@@ -100,15 +83,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public String getProgramNameIndexed( int category, int index ) {
-		if( index < 0 || index >= NUM_PROGRAMS ) return "";
-		return programs[ index ].name;
-	}
-
-	/* Deprecated as of VST 2.4 */
-	public boolean copyProgram( int destIdx ) {
-		if( destIdx < 0 || destIdx >= NUM_PROGRAMS ) return false;
-		programs[ destIdx ] = new Program( programs[ currentProgram ] );
-		return true;
+		return synthesizer.getProgramName( index );
 	}
 
 	public String getEffectName() {
@@ -124,7 +99,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public int getNumPrograms() {
-		return NUM_PROGRAMS;
+		return 128;
 	}
 
 	public int getNumParams() {
@@ -161,22 +136,6 @@ public class LiquinthVST extends VSTPluginAdapter {
 		return true;
 	}
 
-	/* Deprecated as of VST 2.4 */
-	public void process( float[][] inputs, float[][] outputs, int frames ) {
-		float[] output = outputs[ 0 ];
-		int outIdx = 0;
-		while( frames > 0 ) {
-			int length = frames;
-			if( length > MIX_BUF_FRAMES ) length = MIX_BUF_FRAMES;
-			synthesizer.getAudio( mixBuf, length );
-			for( int mixIdx = 0; mixIdx < length; mixIdx++ ) {
-				float out = mixBuf[ mixIdx ];
-				output[ outIdx++ ] += out * 0.00003f; 
-			}
-			frames -= length;
-		}
-	}
-
 	public void processReplacing( float[][] inputs, float[][] outputs, int frames ) {
 		float[] output = outputs[ 0 ];
 		int outIdx = 0;
@@ -202,37 +161,5 @@ public class LiquinthVST extends VSTPluginAdapter {
 			}
 		}
 		return 1;
-	}
-}
-
-class Program {
-	public String name = "";
-	private int[] controllers;
-	private Synthesizer synthesizer;
-	
-	public Program( String name, Synthesizer synthesizer ) {
-		this.name = name;
-		this.synthesizer = synthesizer;
-		controllers = new int[ synthesizer.getNumControllers() ];
-		store();
-	}
-	
-	public Program( Program program ) {
-		this( program.name, program.synthesizer );
-		for( int idx = 0; idx < controllers.length; idx++ ) {
-			controllers[ idx ] = program.controllers[ idx ];
-		}
-	}
-	
-	public void load() {
-		for( int idx = 0; idx < controllers.length; idx++ ) {
-			synthesizer.setController( idx, controllers[ idx ] );
-		}		
-	}
-	
-	public void store() {
-		for( int idx = 0; idx < controllers.length; idx++ ) {
-			controllers[ idx ] = synthesizer.getController( idx );
-		}
 	}
 }
