@@ -1,10 +1,24 @@
 
 package jvst.examples.liquinth;
 
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.event.*;
+import java.awt.Insets;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.InputStream;
+import java.io.OutputStream;
+import javax.swing.ButtonGroup;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JSlider;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private Synthesizer synthesizer;
@@ -38,15 +52,17 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		gbc.gridwidth = 1;
 		programNameField = new JTextField();
 		add( programNameField, gbc );
+		/*
 		gbc.weightx = 0;
 		gbc.gridwidth = 1;
-		JButton storeButton = new JButton( "Store" );
+		JButton resetButton = new JButton( "Reset" );
 		storeButton.addActionListener( new ActionListener() {
 			public void actionPerformed( ActionEvent e ) {
-				synthesizer.storeProgram( programNameField.getText() );
+				synthesizer.resetAllControllers();
 			}
 		} );
-		add( storeButton, gbc );
+		add( resetButton, gbc );
+		*/
 		gbc.weightx = 0;
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		add( new JLabel( "Mod" ), gbc );
@@ -177,17 +193,17 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	public String getProgramName( int progIdx ) {
 		return synthesizer.getProgramName( progIdx );
 	}
-	
-	public void storeProgram( String name ) {
-		synthesizer.storeProgram( name );
+
+	public void setProgramName( String name ) {
+		synthesizer.setProgramName( name );
 	}
-	
-	public boolean loadProgram( String program ) {
-		return synthesizer.loadProgram( program );
+
+	public boolean loadBank( InputStream input ) {
+		return synthesizer.loadBank( input );
 	}
-	
-	public String saveProgram() {
-		return synthesizer.saveProgram();
+		
+	public void saveBank( OutputStream output ) {
+		synthesizer.saveBank( output );
 	}
 	
 	public void getAudio( int[] mixBuf, int length ) {
@@ -206,7 +222,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		}
 		
 		public void actionPerformed( ActionEvent e ) {
-			synthesizer.setModulationController( controller );
+			//synthesizer.setModulationController( controller );
 		}	
 	}
 }

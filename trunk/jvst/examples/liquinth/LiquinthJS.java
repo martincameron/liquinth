@@ -1,9 +1,12 @@
 
 package jvst.examples.liquinth;
 
-import java.awt.*;
-import javax.swing.*;
-import javax.swing.border.*;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 
 public class LiquinthJS extends JPanel {
 	public LiquinthJS() {

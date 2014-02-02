@@ -1,7 +1,8 @@
 
 package jvst.examples.liquinth;
 
-import javax.sound.midi.*;
+import javax.sound.midi.MidiMessage;
+import javax.sound.midi.Receiver;
 
 public class MidiReceiver implements Receiver {
 	private Synthesizer synthesizer;
