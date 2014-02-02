@@ -11,7 +11,6 @@ public interface Synthesizer {
 	public void setController( int controlIdx, int value );
 	public void resetAllControllers();
 	public void setPitchWheel( int value );
-	public void setModulationController( int controlIdx );
 	public int getModulationController();
 	public int getPortamentoController();
 	public int getWaveformController();
@@ -21,8 +20,8 @@ public interface Synthesizer {
 	public int getResonanceController();
 	public int programChange( int progIdx );
 	public String getProgramName( int progIdx );
-	public void storeProgram( String name );
-	public boolean loadProgram( String program );
-	public String saveProgram();
+	public void setProgramName( String name );
+	public boolean loadBank( java.io.InputStream input );
+	public void saveBank( java.io.OutputStream output );
 	public void getAudio( int[] mixBuf, int length );
 }

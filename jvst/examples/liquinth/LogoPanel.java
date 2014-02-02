@@ -1,9 +1,12 @@
 
 package jvst.examples.liquinth;
 
-import java.awt.*;
-import javax.swing.*;
-import javax.swing.border.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.border.BevelBorder;
 
 public class LogoPanel extends JPanel {
 	public LogoPanel() {

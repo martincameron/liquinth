@@ -1,7 +1,10 @@
 
 package jvst.examples.liquinth;
 
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.Mixer;
+import javax.sound.sampled.SourceDataLine;
 
 /*
 	BUF_FRAMES determines the latency.

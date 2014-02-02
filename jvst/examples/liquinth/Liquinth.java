@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final String VERSION = "Liquinth a42dev26";
+	public static final String VERSION = "Liquinth a42dev27";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140122;
+	public static final int RELEASE_DATE = 20140202;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -25,23 +25,24 @@ public class Liquinth implements Synthesizer {
 		CTRL_SUB_OSCILLATOR = 15,
 		CTRL_TIMBRE = 16,
 		NUM_CONTROLLERS = 17,
-		NUM_VOICES = 16;
+		NUM_VOICES = 16,
+		NUM_PROGRAMS = 16;
 
 	private MoogFilter filter;
 	private Envelope filterEnv;
 	private Voice[] voices;
-	private String[] programs;
 	private byte[] keyStatus, controllers;
-	private int sampleRate, programIdx, modCtrlIdx;
+	private int sampleRate, programIdx;
 	private int filterCutoff1, filterCutoff2;
 
 	public Liquinth( int samplingRate ) {
 		sampleRate = samplingRate;
 		filter = new MoogFilter( sampleRate );
 		voices = new Voice[ NUM_VOICES ];
-		programs = new String[ 128 ];
 		keyStatus = new byte[ 128 ];
 		controllers = new byte[ NUM_CONTROLLERS ];
+		//programs = new byte[ NUM_CONTROLLERS * NUM_PROGRAMS ];
+		//bank = new byte[ NUM_CONTROLLERS * NUM_PROGRAMS ];
 		filterEnv = new Envelope( sampleRate );
 		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 			voices[ idx ] = new Voice( sampleRate );
@@ -302,7 +303,7 @@ public class Liquinth implements Synthesizer {
 	}
 	
 	public synchronized void resetAllControllers() {
-		programChange( programIdx );
+		programChange( 0 );
 	}
 
 	public int getPortamentoController() {
@@ -329,21 +330,15 @@ public class Liquinth implements Synthesizer {
 		return CTRL_FILTER_RESONANCE;
 	}
 
+	public int getModulationController() {
+		return CTRL_VIBRATO_DEPTH;
+	}
+
 	public synchronized void setPitchWheel( int octaves ) {
 		int idx;
 		for( idx = 0; idx < NUM_VOICES; idx++ ) {
 			voices[ idx ].setPitchWheel( octaves );
 		}
-	}
-	
-	public void setModulationController( int controlIdx ) {
-		if( controlIdx >= 0 && controlIdx < controllers.length ) {
-			modCtrlIdx = controlIdx;
-		}
-	}
-	
-	public int getModulationController() {
-		return modCtrlIdx;
 	}
 
 	public synchronized void allNotesOff( boolean soundOff ) {
@@ -356,63 +351,32 @@ public class Liquinth implements Synthesizer {
 	}
 
 	public synchronized int programChange( int progIdx ) {
-		programIdx = progIdx & 0x7F;
-		String program = programs[ programIdx ];
-		if( program == null ) {
-			program = saveProgram();
+		for( int idx = 0; idx < NUM_CONTROLLERS; idx++ ) {
+			setController( idx, 0 );
 		}
-		modCtrlIdx = 0;
-		int strIdx = VERSION.length() + 1;
-		for( int ctrlIdx = 0; ctrlIdx < controllers.length; ctrlIdx++ ) {
-			int value = 0;
-			if( program != null ) {
-				char chr = '0';
-				while( strIdx < program.length() && chr >= '0' && chr <= '9' ) {
-					value = value * 10 + chr - '0';
-					chr = program.charAt( strIdx++ );
-				}
-				if( chr == ';' ) {
-					modCtrlIdx = ctrlIdx + 1;
-				}
-			}
-			setController( ctrlIdx, value & 0x7F );
-		}
-		return programIdx;
+		setController( CTRL_OVERDRIVE, 32 );
+		setController( CTRL_FILTER_CUTOFF, 127 );
+		return 0;
 	}
 
 	public synchronized String getProgramName( int progIdx ) {
 		String name = "";
-		String program = programs[ progIdx & 0x7F ];
-		if( program != null ) {
-			name = program.substring( program.indexOf( ']' ) + 1 );
+		if( progIdx >= 0 && progIdx < NUM_PROGRAMS ) {
+			// Not implemented.
 		}
 		return name;
 	}
 	
-	public synchronized void storeProgram( String name )	{
-		char[] params = new char[ controllers.length * 4 ];
-		for( int idx = 0; idx < controllers.length; idx++ ) {
-			params[ idx * 4 ] = idx > 0 ? ( idx == modCtrlIdx ? ';' : ',' ) : '[';
-			params[ idx * 4 + 1 ] = ( char ) ( '0' + controllers[ idx ] / 100 );
-			params[ idx * 4 + 2 ] = ( char ) ( '0' + controllers[ idx ] / 10 % 10 );
-			params[ idx * 4 + 3 ] = ( char ) ( '0' + controllers[ idx ] % 10 );
-		}
-		programs[ programIdx ] = VERSION + new String( params ) + ']' + name;
+	public synchronized void setProgramName( String name ) {
+		// Not implemented.
 	}
 		
-	public synchronized boolean loadProgram( String program ) {
-		if( program.substring( 0, VERSION.length() ).equals( VERSION ) ) {
-			programs[ programIdx ] = program;
-			return true;
-		}
+	public synchronized boolean loadBank( java.io.InputStream input ) {
+		// Not implemented.
 		return false;
 	}
 	
-	public synchronized String saveProgram() {
-		String program = VERSION + "[042,127]Saw";
-		if( programs[ programIdx ] != null ) {
-			program = programs[ programIdx ];
-		}
-		return program;
+	public synchronized void saveBank( java.io.OutputStream output ) {
+		// Not implemented.
 	}
 }

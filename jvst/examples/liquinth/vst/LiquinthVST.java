@@ -1,8 +1,16 @@
 
-package jvst.examples.liquinth;
+package jvst.examples.liquinth.vst;
 
-import jvst.wrapper.*;
-import jvst.wrapper.valueobjects.*;
+import jvst.wrapper.VSTPluginAdapter;
+import jvst.wrapper.valueobjects.VSTEvent;
+import jvst.wrapper.valueobjects.VSTEvents;
+import jvst.wrapper.valueobjects.VSTMidiEvent;
+import jvst.wrapper.valueobjects.VSTPinProperties;
+
+import jvst.examples.liquinth.Liquinth;
+import jvst.examples.liquinth.MidiReceiver;
+import jvst.examples.liquinth.Synthesizer;
+import jvst.examples.liquinth.SynthesizerPanel;
 
 public class LiquinthVST extends VSTPluginAdapter {
 	private static final int MIX_BUF_FRAMES = 4096;
@@ -40,7 +48,6 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public void setProgram( int index ) {
-		synthesizer.storeProgram( synthesizer.getProgramName( currentProgram ) );
 		currentProgram = synthesizer.programChange( index );
 	}
 
@@ -53,7 +60,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public void setProgramName( String name ) {
-		synthesizer.storeProgram( name );
+		synthesizer.setProgramName( name );
 	}
 
 	public String getProgramName() {

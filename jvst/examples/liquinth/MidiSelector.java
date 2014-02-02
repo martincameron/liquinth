@@ -1,10 +1,17 @@
 
 package jvst.examples.liquinth;
 
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.sound.midi.*;
+import java.awt.Insets;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.sound.midi.MidiDevice;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.MidiUnavailableException;
 
 public class MidiSelector extends JPanel {
 	private MidiReceiver midiReceiver;

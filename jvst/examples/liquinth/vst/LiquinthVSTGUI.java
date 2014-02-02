@@ -1,12 +1,18 @@
 
-package jvst.examples.liquinth;
+package jvst.examples.liquinth.vst;
 
-import java.awt.*;
-import javax.swing.*;
-import javax.swing.border.*;
+import java.awt.BorderLayout;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 
-import jvst.wrapper.*;
+import jvst.wrapper.VSTPluginAdapter;
+import jvst.wrapper.VSTPluginGUIAdapter;
 import jvst.wrapper.gui.VSTPluginGUIRunner;
+
+import jvst.examples.liquinth.Liquinth;
+import jvst.examples.liquinth.LogoPanel;
+import jvst.examples.liquinth.Synthesizer;
 
 public class LiquinthVSTGUI extends VSTPluginGUIAdapter {
 	private Synthesizer synthesizer;
