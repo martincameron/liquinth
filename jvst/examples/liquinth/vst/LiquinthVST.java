@@ -106,7 +106,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public int getNumPrograms() {
-		return 128;
+		return synthesizer.getNumPrograms();
 	}
 
 	public int getNumParams() {

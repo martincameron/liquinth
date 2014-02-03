@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final String VERSION = "Liquinth a42dev27";
+	public static final String VERSION = "Liquinth a42dev28";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140202;
+	public static final int RELEASE_DATE = 20140203;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -350,6 +350,10 @@ public class Liquinth implements Synthesizer {
 		}
 	}
 
+	public int getNumPrograms() {
+		return NUM_PROGRAMS;
+	}
+
 	public synchronized int programChange( int progIdx ) {
 		for( int idx = 0; idx < NUM_CONTROLLERS; idx++ ) {
 			setController( idx, 0 );
@@ -360,7 +364,7 @@ public class Liquinth implements Synthesizer {
 	}
 
 	public synchronized String getProgramName( int progIdx ) {
-		String name = "";
+		String name = "No program";
 		if( progIdx >= 0 && progIdx < NUM_PROGRAMS ) {
 			// Not implemented.
 		}
@@ -371,12 +375,11 @@ public class Liquinth implements Synthesizer {
 		// Not implemented.
 	}
 		
-	public synchronized boolean loadBank( java.io.InputStream input ) {
-		// Not implemented.
-		return false;
+	public synchronized void loadBank( java.io.InputStream input ) {
+		throw new UnsupportedOperationException( "Load bank not implemented." );
 	}
 	
 	public synchronized void saveBank( java.io.OutputStream output ) {
-		// Not implemented.
+		throw new UnsupportedOperationException( "Save bank not implemented." );
 	}
 }

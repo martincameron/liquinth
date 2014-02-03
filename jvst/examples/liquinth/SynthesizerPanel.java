@@ -175,6 +175,10 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		return synthesizer.getResonanceController();
 	}
 
+	public int getNumPrograms() {
+		return synthesizer.getNumPrograms();
+	}
+
 	public int programChange( int programIdx ) {
 		final int progIdx = synthesizer.programChange( programIdx );
 		SwingUtilities.invokeLater( new Runnable() {
@@ -198,8 +202,8 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		synthesizer.setProgramName( name );
 	}
 
-	public boolean loadBank( InputStream input ) {
-		return synthesizer.loadBank( input );
+	public void loadBank( InputStream input ) {
+		synthesizer.loadBank( input );
 	}
 		
 	public void saveBank( OutputStream output ) {
