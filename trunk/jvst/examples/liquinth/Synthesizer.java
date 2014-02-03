@@ -18,10 +18,11 @@ public interface Synthesizer {
 	public int getReleaseController();
 	public int getCutoffController();
 	public int getResonanceController();
+	public int getNumPrograms();
 	public int programChange( int progIdx );
 	public String getProgramName( int progIdx );
 	public void setProgramName( String name );
-	public boolean loadBank( java.io.InputStream input );
+	public void loadBank( java.io.InputStream input );
 	public void saveBank( java.io.OutputStream output );
 	public void getAudio( int[] mixBuf, int length );
 }
