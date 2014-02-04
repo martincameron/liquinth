@@ -10,12 +10,15 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 
 public class AudioSelector extends JPanel {
+	private Synthesizer synthesizer;
 	private Player player;
+	private Thread thread;
 
-	public AudioSelector( Player player ) {
+	public AudioSelector( Synthesizer synth ) {
 		setLayout( new GridBagLayout() );
 
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -28,14 +31,26 @@ public class AudioSelector extends JPanel {
 		gbc.weightx = 1;
 		add( combo, gbc );
 
-		this.player = player;
+		synthesizer = synth;
 		setMixer( ( Mixer.Info ) combo.getSelectedItem() );
 	}
 
 	private void setMixer( Mixer.Info mixerInfo ) {
-		player.stop();
-		player.setMixer( AudioSystem.getMixer( mixerInfo ) );
-		new Thread( player ).start();
+		try {
+			if( player != null ) {
+				player.stop();
+			}
+			if( thread != null ) {
+				while( thread.isAlive() ) {
+					try { thread.join(); } catch( InterruptedException ie ) {}
+				}
+			}
+			player = new Player( synthesizer, AudioSystem.getMixer( mixerInfo ) );
+			thread = new Thread( player );
+			thread.start();
+		} catch( LineUnavailableException e ) {
+			System.err.println( "Unable to open audio device: " + e.getMessage() );
+		}
 	}
 
 	private class ComboListener implements ItemListener {

@@ -3,6 +3,7 @@ package jvst.examples.liquinth;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.DataLine;
+import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
 
@@ -13,77 +14,45 @@ import javax.sound.sampled.SourceDataLine;
 public class Player implements Runnable {
 	public static final int SAMPLING_RATE = 48000;
 	public static final int OVERSAMPLE = 2;
-
 	private static final int BUF_FRAMES = 1024;
 	private static final int BUF_BYTES = BUF_FRAMES * 2;
 
-	private Synthesizer audioSource;
-	private AudioFormat audioFormat;
-	private SourceDataLine.Info lineInfo;
-	private Mixer audioMixer;
+	private Synthesizer synthesizer;
+	private SourceDataLine audioLine;
+	private boolean playing;
 
-	private boolean play, running;
-
-	public Player( Synthesizer synthesizer ) {
-		audioSource = synthesizer;
-		audioFormat = new AudioFormat( SAMPLING_RATE, 16, 1, true, false );
-		lineInfo = new DataLine.Info( SourceDataLine.class, audioFormat, BUF_BYTES );
-	}
-
-	public void setMixer( Mixer mixer ) {
-		audioMixer = mixer;
-	}		
-
-	public boolean isRunning() {
-		return running;
+	public Player( Synthesizer synth, Mixer mixer ) throws LineUnavailableException {
+		synthesizer = synth;
+		AudioFormat audioFormat = new AudioFormat( SAMPLING_RATE, 16, 1, true, false );
+		DataLine.Info lineInfo = new DataLine.Info( SourceDataLine.class, audioFormat, BUF_BYTES );
+		audioLine = ( SourceDataLine ) mixer.getLine( lineInfo );
+		audioLine.open( audioFormat, BUF_BYTES );
 	}
 
 	public void run() {
-		int mixIdx, mixEnd, outIdx, out;
-		int[] mixBuf;
-		byte[] outBuf;
-		SourceDataLine audioLine;
-		if( play ) {
-			stop();
-		}
-		play = true;
-		mixBuf = new int[ BUF_FRAMES * OVERSAMPLE ];
-		outBuf = new byte[ BUF_BYTES ];
-		try {
-			audioLine = ( SourceDataLine ) audioMixer.getLine( lineInfo );
-			audioLine.open( audioFormat, BUF_BYTES );
-		} catch( Exception e ) {
-			System.out.println( "Player.run(): Unable to open audio output!" );
-			return;
-		}
-		audioLine.start();
-		running = true;
-		while( play ) {
-			outIdx = 0;
-			mixIdx = 0;
-			mixEnd = BUF_FRAMES * OVERSAMPLE;
-			audioSource.getAudio( mixBuf, mixEnd );
-			while( mixIdx < mixEnd ) {
-				out = mixBuf[ mixIdx ];
-				outBuf[ outIdx     ] = ( byte ) ( out & 0xFF );
-				outBuf[ outIdx + 1 ] = ( byte ) ( out >> 8 );
-				outIdx += 2;
-				mixIdx += OVERSAMPLE;
+		if( !playing ) {
+			int[] mixBuf = new int[ BUF_FRAMES * OVERSAMPLE ];
+			byte[] outBuf = new byte[ BUF_BYTES ];
+			audioLine.start();
+			playing = true;
+			while( playing ) {
+				int outIdx = 0, mixIdx = 0, mixEnd = BUF_FRAMES * OVERSAMPLE;
+				synthesizer.getAudio( mixBuf, mixEnd );
+				while( mixIdx < mixEnd ) {
+					int out = mixBuf[ mixIdx ];
+					outBuf[ outIdx     ] = ( byte ) ( out & 0xFF );
+					outBuf[ outIdx + 1 ] = ( byte ) ( out >> 8 );
+					outIdx += 2;
+					mixIdx += OVERSAMPLE;
+				}
+				audioLine.write( outBuf, 0, BUF_BYTES );
 			}
-			audioLine.write( outBuf, 0, BUF_BYTES );
+			audioLine.drain();
+			audioLine.close();
 		}
-		audioLine.drain();
-		audioLine.close();
-		running = false;
 	}
 
 	public void stop() {
-		while( running ) {
-			play = false;
-			try {
-				Thread.sleep( 20 );
-			} catch( InterruptedException ie ) {
-			}
-		}
+		playing = false;
 	}
 }
