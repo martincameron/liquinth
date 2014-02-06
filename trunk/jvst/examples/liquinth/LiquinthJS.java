@@ -31,67 +31,35 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class LiquinthJS extends JFrame {
 	private Liquinth liquinth;
+	private SynthesizerPanel synthesizerPanel;
 	private MidiReceiver midiReceiver;
 	private MidiDevice midiDevice;
 	private Player player;
 	private Thread playThread;
+	private JFileChooser loadBankFileChooser, saveBankFileChooser;
 	
 	public LiquinthJS() {
 		liquinth = new Liquinth( Player.SAMPLING_RATE * Player.OVERSAMPLE );
-		final SynthesizerPanel synthPanel = new SynthesizerPanel( liquinth );
-		midiReceiver = new MidiReceiver( synthPanel );
+		synthesizerPanel = new SynthesizerPanel( liquinth );
+		midiReceiver = new MidiReceiver( synthesizerPanel );
 		JMenuBar menuBar = new JMenuBar();
+		// Add file menu.
 		JMenu fileMenu = new JMenu( "File" );
-		JMenuItem loadMenuItem = new JMenuItem( "Load Bank" );
 		UIManager.put( "FileChooser.readOnly", Boolean.TRUE );
-		final JFileChooser loadFileChooser = new JFileChooser();
-		loadFileChooser.setFileFilter( new FileNameExtensionFilter( "Sound Bank", "liq" ) );
-		loadMenuItem.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent event ) {
-				int result = loadFileChooser.showOpenDialog( LiquinthJS.this );
-				if( result == JFileChooser.APPROVE_OPTION ) {
-					try {
-						File file = loadFileChooser.getSelectedFile();
-						FileInputStream inputStream = new FileInputStream( file );
-						try {
-							synthPanel.loadBank( inputStream );
-						} finally {
-							inputStream.close();
-						}
-					} catch( Exception exception ) {
-						JOptionPane.showMessageDialog( LiquinthJS.this,
-							exception.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
-					}
-				}
-			}
-		} );
+		FileNameExtensionFilter filter = new FileNameExtensionFilter( "Sound Bank", "liq" );
+		// Add load bank menu item.
+		JMenuItem loadMenuItem = new JMenuItem( "Load Bank" );
+		loadBankFileChooser = new JFileChooser();
+		loadBankFileChooser.setFileFilter( filter );
+		loadMenuItem.addActionListener( new LoadBankMenuItemListener() );
 		fileMenu.add( loadMenuItem );
+		// Add save bank menu item.
 		JMenuItem saveMenuItem = new JMenuItem( "Save Bank" );
-		final JFileChooser saveFileChooser = new JFileChooser();
-		saveFileChooser.setFileFilter( new FileNameExtensionFilter( "Sound Bank", "liq" ) );
-		saveMenuItem.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent e ) {
-				int result = saveFileChooser.showSaveDialog( LiquinthJS.this );
-				if( result == JFileChooser.APPROVE_OPTION ) {
-					try {
-						File file = loadFileChooser.getSelectedFile();
-						if( file.exists() ) {
-							throw new Exception( "File already exists!" );
-						}
-						FileOutputStream outputStream = new FileOutputStream( file );
-						try {
-							synthPanel.saveBank( outputStream );
-						} finally {
-							outputStream.close();
-						}
-					} catch( Exception exception ) {
-						JOptionPane.showMessageDialog( LiquinthJS.this,
-							exception.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
-					}
-				}
-			}
-		} );
+		saveBankFileChooser = new JFileChooser();
+		saveBankFileChooser.setFileFilter( filter );
+		saveMenuItem.addActionListener( new SaveBankMenuItemListener() );
 		fileMenu.add( saveMenuItem );
+		// Add quit menu item.
 		fileMenu.add( new JSeparator() );
 		JMenuItem quitMenuItem = new JMenuItem( "Quit" );
 		quitMenuItem.addActionListener( new ActionListener() {
@@ -103,7 +71,7 @@ public class LiquinthJS extends JFrame {
 		fileMenu.add( quitMenuItem );
 		menuBar.add( fileMenu );
 		JMenu optionsMenu = new JMenu( "Options" );
-		// Add audio device menu and activate the first mixer.
+		// Add audio device menu.
 		JMenu audioDeviceMenu = new JMenu( "Audio Device" );
 		ButtonGroup audioDeviceButtonGroup = new ButtonGroup();
 		Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
@@ -113,8 +81,9 @@ public class LiquinthJS extends JFrame {
 			audioDeviceButtonGroup.add( menuItem );
 			audioDeviceMenu.add( menuItem );
 		}
-		audioDeviceButtonGroup.getElements().nextElement().doClick();
 		optionsMenu.add( audioDeviceMenu );
+		// Activate the first mixer.
+		audioDeviceButtonGroup.getElements().nextElement().doClick();
 		// Add MIDI device menu.
 		JMenu midiDeviceMenu = new JMenu( "MIDI Input Device" );
 		ButtonGroup midiDeviceButtonGroup = new ButtonGroup();
@@ -139,10 +108,12 @@ public class LiquinthJS extends JFrame {
 			midiChannelButtonGroup.add( menuItem );
 			midiChannelMenu.add( menuItem );
 		}
-		midiChannelButtonGroup.getElements().nextElement().doClick();
 		optionsMenu.add( midiChannelMenu );
+		// Select first channel.
+		midiChannelButtonGroup.getElements().nextElement().doClick();
 		menuBar.add( optionsMenu );
 		setJMenuBar( menuBar );
+		// Create panel for logo and Synthesizer.
 		JPanel panel = new JPanel();
 		panel.setLayout( new GridBagLayout() );
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -151,7 +122,7 @@ public class LiquinthJS extends JFrame {
 		gbc.weightx = gbc.weighty = 1;
 		panel.add( new LogoPanel(), gbc );
 		gbc.weighty = 0;
-		panel.add( synthPanel, gbc );
+		panel.add( synthesizerPanel, gbc );
 		panel.setBorder( new EmptyBorder( 6, 6, 6, 6 ) );
 		getContentPane().add( panel );
 	}
@@ -177,6 +148,49 @@ public class LiquinthJS extends JFrame {
 			} catch( Exception exception ) {
 				JOptionPane.showMessageDialog( LiquinthJS.this, exception.getMessage(),
 					"Unable to open audio device", JOptionPane.ERROR_MESSAGE );
+			}
+		}
+	}
+
+	private class LoadBankMenuItemListener implements ActionListener {
+		public void actionPerformed( ActionEvent event ) {
+			int result = loadBankFileChooser.showOpenDialog( LiquinthJS.this );
+			if( result == JFileChooser.APPROVE_OPTION ) {
+				try {
+					File file = loadBankFileChooser.getSelectedFile();
+					FileInputStream inputStream = new FileInputStream( file );
+					try {
+						synthesizerPanel.loadBank( inputStream );
+					} finally {
+						inputStream.close();
+					}
+				} catch( Exception exception ) {
+					JOptionPane.showMessageDialog( LiquinthJS.this,
+						exception.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
+				}
+			}
+		}
+	} 
+
+	private class SaveBankMenuItemListener implements ActionListener {
+		public void actionPerformed( ActionEvent event ) {
+			int result = saveBankFileChooser.showSaveDialog( LiquinthJS.this );
+			if( result == JFileChooser.APPROVE_OPTION ) {
+				try {
+					File file = saveBankFileChooser.getSelectedFile();
+					if( file.exists() ) {
+						throw new Exception( "File already exists!" );
+					}
+					FileOutputStream outputStream = new FileOutputStream( file );
+					try {
+						synthesizerPanel.saveBank( outputStream );
+					} finally {
+						outputStream.close();
+					}
+				} catch( Exception exception ) {
+					JOptionPane.showMessageDialog( LiquinthJS.this,
+						exception.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
+				}
 			}
 		}
 	}

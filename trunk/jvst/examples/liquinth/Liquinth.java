@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final String VERSION = "Liquinth a42dev29";
+	public static final String VERSION = "Liquinth a42dev30";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140204;
+	public static final int RELEASE_DATE = 20140206;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
