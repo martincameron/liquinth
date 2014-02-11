@@ -7,6 +7,7 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import javax.swing.ButtonGroup;
 import javax.swing.JLabel;
@@ -202,11 +203,11 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		synthesizer.setProgramName( name );
 	}
 
-	public void loadBank( InputStream input ) {
+	public void loadBank( InputStream input ) throws IOException {
 		synthesizer.loadBank( input );
 	}
 		
-	public void saveBank( OutputStream output ) {
+	public void saveBank( OutputStream output ) throws IOException {
 		synthesizer.saveBank( output );
 	}
 	
