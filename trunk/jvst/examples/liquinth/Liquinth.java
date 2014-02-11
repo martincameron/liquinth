@@ -2,9 +2,9 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final String VERSION = "Liquinth a42dev30";
+	public static final int REVISION = 42, RELEASE_DATE = 20140211;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn44";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
-	public static final int RELEASE_DATE = 20140206;
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
@@ -34,6 +34,8 @@ public class Liquinth implements Synthesizer {
 	private byte[] keyStatus, controllers;
 	private int sampleRate, programIdx;
 	private int filterCutoff1, filterCutoff2;
+	private String[] programNames;
+	private byte[] programs, bank;
 
 	public Liquinth( int samplingRate ) {
 		sampleRate = samplingRate;
@@ -41,8 +43,9 @@ public class Liquinth implements Synthesizer {
 		voices = new Voice[ NUM_VOICES ];
 		keyStatus = new byte[ 128 ];
 		controllers = new byte[ NUM_CONTROLLERS ];
-		//programs = new byte[ NUM_CONTROLLERS * NUM_PROGRAMS ];
-		//bank = new byte[ NUM_CONTROLLERS * NUM_PROGRAMS ];
+		programNames = new String[ NUM_CONTROLLERS ];
+		programs = new byte[ NUM_CONTROLLERS * NUM_PROGRAMS ];
+		bank = new byte[ NUM_CONTROLLERS * NUM_PROGRAMS ];
 		filterEnv = new Envelope( sampleRate );
 		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 			voices[ idx ] = new Voice( sampleRate );
@@ -364,22 +367,61 @@ public class Liquinth implements Synthesizer {
 	}
 
 	public synchronized String getProgramName( int progIdx ) {
-		String name = "No program";
+		String name = "";
 		if( progIdx >= 0 && progIdx < NUM_PROGRAMS ) {
-			// Not implemented.
+			name = programNames[ progIdx ];
 		}
 		return name;
 	}
 	
 	public synchronized void setProgramName( String name ) {
-		// Not implemented.
+		programNames[ programIdx ] = ( name != null ) ? name : "";
 	}
-		
-	public synchronized void loadBank( java.io.InputStream input ) {
-		throw new UnsupportedOperationException( "Load bank not implemented." );
+
+	public synchronized void loadBank( java.io.InputStream input ) throws java.io.IOException {
+		// 42[0,0,0]name\n
+		char[] name = new char[ 256 ];
+		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
+			int chr = input.read();
+			while( chr >= 0 && chr < '0' ) {
+				chr = input.read();
+			}
+			int ver = 0;
+			while( chr >= '0' && chr <= '9' ) {
+				ver = ver * 10 + chr - '0';
+				chr = input.read();
+			}
+			while( chr == '[' || chr == 32 ) {
+				chr = input.read();
+			}
+			for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
+				int value = 0;
+				while( chr >= '0' && chr <= '9' ) {
+					value = value * 10 + chr - '0';
+					chr = input.read();
+				}
+				while( chr == ',' || chr == 32 ) {
+					chr = input.read();
+				}
+				bank[ prgIdx * NUM_PROGRAMS + ctlIdx ] = ( byte ) ( value & 0x7F );
+			}
+			while( chr != ']' && chr > 32 ) {
+				chr = input.read();
+			}
+			int nameIdx = 0;
+			chr = input.read();
+			while( chr >= 32 ) {
+				if( nameIdx < name.length ) {
+					name[ nameIdx++ ] = ( char ) chr;
+				}
+				chr = input.read();
+			}
+			programNames[ prgIdx ] = new String( name, 0, nameIdx );
+		}
+		resetAllControllers();
 	}
 	
-	public synchronized void saveBank( java.io.OutputStream output ) {
+	public synchronized void saveBank( java.io.OutputStream output ) throws java.io.IOException {
 		throw new UnsupportedOperationException( "Save bank not implemented." );
 	}
 }

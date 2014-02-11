@@ -22,7 +22,7 @@ public interface Synthesizer {
 	public int programChange( int progIdx );
 	public String getProgramName( int progIdx );
 	public void setProgramName( String name );
-	public void loadBank( java.io.InputStream input );
-	public void saveBank( java.io.OutputStream output );
+	public void loadBank( java.io.InputStream input ) throws java.io.IOException;
+	public void saveBank( java.io.OutputStream output ) throws java.io.IOException;
 	public void getAudio( int[] mixBuf, int length );
 }
