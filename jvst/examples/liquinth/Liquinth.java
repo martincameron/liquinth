@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140217;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn45";
+	public static final int REVISION = 42, RELEASE_DATE = 20140219;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn46";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
@@ -35,7 +35,7 @@ public class Liquinth implements Synthesizer {
 	private int sampleRate, programIdx;
 	private int filterCutoff1, filterCutoff2;
 	private String[] programNames;
-	private byte[] programs;
+	private byte[] programBank;
 
 	public Liquinth( int samplingRate ) {
 		sampleRate = samplingRate;
@@ -43,8 +43,8 @@ public class Liquinth implements Synthesizer {
 		voices = new Voice[ NUM_VOICES ];
 		keyStatus = new byte[ 128 ];
 		controllers = new byte[ NUM_CONTROLLERS ];
-		programNames = new String[ NUM_CONTROLLERS ];
-		programs = new byte[ NUM_CONTROLLERS * NUM_PROGRAMS ];
+		programNames = new String[ NUM_PROGRAMS ];
+		programBank = new byte[ NUM_CONTROLLERS * NUM_PROGRAMS ];
 		filterEnv = new Envelope( sampleRate );
 		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 			voices[ idx ] = new Voice( sampleRate );
@@ -52,9 +52,9 @@ public class Liquinth implements Synthesizer {
 		}
 		allNotesOff( true );
 		programNames[ 0 ] = "Sawtooth";
-		programs[ CTRL_OVERDRIVE ] = 32;
-		programs[ CTRL_FILTER_CUTOFF ] = 127;
-		programChange( 0 );
+		programBank[ CTRL_OVERDRIVE ] = 32;
+		programBank[ CTRL_FILTER_CUTOFF ] = 127;
+		resetAllControllers();
 	}
 
 	public int getNumControllers() {
@@ -90,13 +90,13 @@ public class Liquinth implements Synthesizer {
 		for( int idx = 0; idx < length; idx++ ) {
 			outBuf[ idx ] = 0;
 		}
-		// Ensure changes to filter cutoff are smoothly interpolated.
+		/* Ensure changes to filter cutoff are smoothly interpolated. */
 		int filterCutoffRate = ( ( filterCutoff2 - filterCutoff1 ) << Maths.FP_SHIFT ) / length;
 		int offset = 0;
 		while( offset < length ) {
 			int count = length - offset;
 			if( count > ( sampleRate >> 7 ) ) {
-				// Ensure count is no more than 4-8ms to improve envelope responsiveness.
+				/* Ensure count is no more than 4-8ms to improve envelope responsiveness. */
 				count = sampleRate >> 8;
 			}		
 			/* Get audio from voices. */
@@ -214,14 +214,13 @@ public class Liquinth implements Synthesizer {
 	}
 
 	public synchronized void setController( int controller, int value ) {
-		int idx;
 		if( value >= 0 && value < 128 ) {
 			if( controller >= 0 && controller < controllers.length ) {
 				controllers[ controller ] = ( byte ) value;
 				switch( controller ) {
 					case CTRL_OVERDRIVE:
 						value = value << ( Maths.FP_SHIFT - 6 );
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setVolume( value );
 						}
 						break;
@@ -238,22 +237,22 @@ public class Liquinth implements Synthesizer {
 						filterEnv.setReleaseTime( ( value * value ) >> 2 );
 						break;
 					case CTRL_PORTAMENTO:
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setPortamentoTime( ( value * value ) >> 4 );
 						}
 						break;
 					case CTRL_WAVEFORM:
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setWaveform( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
 						}
 						break;
 					case CTRL_VOLUME_ATTACK:
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setVolAttack( ( value * value ) >> 2 );
 						}
 						break;
 					case CTRL_VOLUME_RELEASE:
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setVolRelease( ( value * value ) >> 2 );
 						}
 						break;
@@ -263,14 +262,14 @@ public class Liquinth implements Synthesizer {
 						} else {
 							value = ( ( value - 55 ) << Maths.FP_SHIFT ) / 72;
 						}
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setOsc2Tuning( value );
 						}
 						break;
 					case CTRL_VIBRATO_SPEED:
 						value = ( 127 - value ) << ( Maths.FP_SHIFT - 7 );
 						value = Maths.exp2( ( value * 11 ) + ( 4 << Maths.FP_SHIFT ) ) >> Maths.FP_SHIFT;
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setLFOSpeed( value );
 						}
 						break;
@@ -278,27 +277,27 @@ public class Liquinth implements Synthesizer {
 						if( value > 0 ) {
 							value = Maths.exp2( value << ( Maths.FP_SHIFT - 4 ) ) >> 8;
 						}
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setVibratoDepth( value );
 						}
 						break;
 					case CTRL_PULSE_WIDTH:
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setPulseWidth( value << ( Maths.FP_SHIFT - 7 ) );
 						}
 						break;
 					case CTRL_PULSE_WIDTH_MODULATION:
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setPulseWidthModulationDepth( value << ( Maths.FP_SHIFT - 8 ) );
 						}
 						break;
 					case CTRL_SUB_OSCILLATOR:
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setSubOscillatorLevel( value << ( Maths.FP_SHIFT - 7 ) );
 						}
 						break;
 					case CTRL_TIMBRE:
-						for( idx = 0; idx < NUM_VOICES; idx++ ) {
+						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setTimbre( ( 127 - value ) << ( Maths.FP_SHIFT - 7 ) );
 						}
 						break;
@@ -308,7 +307,10 @@ public class Liquinth implements Synthesizer {
 	}
 	
 	public synchronized void resetAllControllers() {
-		programChange( programIdx );
+		/* Reload the controller values from the bank. */
+		for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
+			setController( ctlIdx, programBank[ programIdx * NUM_CONTROLLERS + ctlIdx ] );
+		}
 	}
 
 	public int getPortamentoController() {
@@ -359,17 +361,14 @@ public class Liquinth implements Synthesizer {
 	}
 
 	public synchronized int programChange( int prgIdx ) {
-		if( prgIdx < 0 || prgIdx >= NUM_PROGRAMS ) {
-			prgIdx = 0;
-		}		
-		for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
-			if( prgIdx != programIdx ) {
-				// Store the current controller values if moving to a different program.
-				programs[ programIdx * NUM_CONTROLLERS + ctlIdx ] = ( byte ) getController( ctlIdx );
+		if( prgIdx >= 0 && prgIdx < NUM_PROGRAMS ) {
+			for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
+				/* Save the current controller values to the bank.*/
+				programBank[ programIdx * NUM_CONTROLLERS + ctlIdx ] = controllers[ ctlIdx ];
+				setController( ctlIdx, programBank[ prgIdx * NUM_CONTROLLERS + ctlIdx ] );
 			}
-			setController( ctlIdx, programs[ prgIdx * NUM_CONTROLLERS + ctlIdx ] );
+			programIdx = prgIdx;
 		}
-		programIdx = prgIdx;
 		return programIdx;
 	}
 
@@ -386,38 +385,37 @@ public class Liquinth implements Synthesizer {
 	}
 
 	public synchronized void loadBank( java.io.InputStream input ) throws java.io.IOException {
-		// *000*000*000#name\n
 		char[] name = new char[ 256 ];
 		int chr = input.read();
 		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
 			while( chr >= 0 && chr <= 32 ) {
-				// Skip whitespace.
+				/* Skip whitespace. */
 				chr = input.read();
 			}
 			for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
 				int value = 0;
 				while( chr > REVISION ) {
-					// Skip unsupported controller values.
+					/* Skip unsupported controller values. */
 					chr = input.read();
 				}
 				if( chr > '#' ) {
-					// Read controller value.
+					/* Read controller value. */
 					chr = input.read();
 					while( chr >= '0' && chr <= '9' ) {
 						value = value * 10 + chr - '0';
 						chr = input.read();
 					}
 				}
-				programs[ prgIdx * NUM_CONTROLLERS + ctlIdx ] = ( byte ) ( value & 0x7F );
+				programBank[ prgIdx * NUM_CONTROLLERS + ctlIdx ] = ( byte ) ( value & 0x7F );
 			}
 			while( chr > 32 && chr != '#' ) {
-				// Skip to name token.
+				/* Skip to name token. */
 				chr = input.read();
 			}
 			int nameIdx = 0;
 			chr = input.read();
 			while( chr >= 32 ) {
-				// Read name characters.
+				/* Read name characters. */
 				if( nameIdx < name.length ) {
 					name[ nameIdx++ ] = ( char ) chr;
 				}
@@ -425,16 +423,18 @@ public class Liquinth implements Synthesizer {
 			}
 			programNames[ prgIdx ] = new String( name, 0, nameIdx );
 		}
-		programChange( programIdx );
+		resetAllControllers();
 	}
 	
 	public synchronized void saveBank( java.io.OutputStream output ) throws java.io.IOException {
+		/* Save the current controller settings to the program bank. */
+		programChange( programIdx );
 		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
 			for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
-				int ctlValue = programs[ prgIdx * NUM_CONTROLLERS + ctlIdx ];
-				// The lowest revision the controller is available.
+				int ctlValue = programBank[ prgIdx * NUM_CONTROLLERS + ctlIdx ];
+				/* The lowest revision the controller is available. */
 				output.write( 42 );
-				// The controller value in decimal.
+				/* The controller value in decimal. */
 				output.write( '0' + ctlValue / 100 );
 				output.write( '0' + ctlValue % 100 / 10 );
 				output.write( '0' + ctlValue % 10 );
