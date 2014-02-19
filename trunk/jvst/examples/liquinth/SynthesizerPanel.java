@@ -6,10 +6,13 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import javax.swing.ButtonGroup;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -27,6 +30,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private SpinnerNumberModel programChangeSpinnerModel;
 	private JTextField programNameField;
 	private JRadioButton[] modulationAssign;
+	private int modulationController;
 
 	public SynthesizerPanel( Synthesizer synth ) {	
 		synthesizer = synth;
@@ -52,18 +56,19 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		gbc.weightx = 1;
 		gbc.gridwidth = 1;
 		programNameField = new JTextField();
+		ProgramNameListener programNameListener = new ProgramNameListener();
+		programNameField.addActionListener( programNameListener );
+		programNameField.addFocusListener( programNameListener );
 		add( programNameField, gbc );
-		/*
 		gbc.weightx = 0;
 		gbc.gridwidth = 1;
-		JButton resetButton = new JButton( "Reset" );
-		storeButton.addActionListener( new ActionListener() {
+		javax.swing.JButton resetButton = new javax.swing.JButton( "Reset" );
+		resetButton.addActionListener( new ActionListener() {
 			public void actionPerformed( ActionEvent e ) {
-				synthesizer.resetAllControllers();
+				resetAllControllers();
 			}
 		} );
 		add( resetButton, gbc );
-		*/
 		gbc.weightx = 0;
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		add( new JLabel( "Mod" ), gbc );
@@ -132,6 +137,13 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 
 	public void resetAllControllers() {
 		synthesizer.resetAllControllers();
+		SwingUtilities.invokeLater( new Runnable() {
+			public void run() {
+				for( int ctrlIdx = 0; ctrlIdx < controllers.length; ctrlIdx++ ) {
+					controllers[ ctrlIdx ].setValue( synthesizer.getController( ctrlIdx ) );
+				}
+			}
+		} );
 	}
 
 	public void setPitchWheel( int value ) {
@@ -149,7 +161,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	}
 	
 	public int getModulationController() {
-		return synthesizer.getModulationController();
+		return modulationController;
 	}
 
 	public int getPortamentoController() {
@@ -186,7 +198,8 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 			public void run() {
 				programChangeSpinnerModel.setValue( Integer.valueOf( progIdx ) );
 				programNameField.setText( synthesizer.getProgramName( progIdx ) );
-				modulationAssign[ synthesizer.getModulationController() ].setSelected( true );
+				modulationController = synthesizer.getModulationController();
+				modulationAssign[ modulationController ].setSelected( true );
 				for( int ctrlIdx = 0; ctrlIdx < controllers.length; ctrlIdx++ ) {
 					controllers[ ctrlIdx ].setValue( synthesizer.getController( ctrlIdx ) );
 				}
@@ -205,6 +218,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 
 	public void loadBank( InputStream input ) throws IOException {
 		synthesizer.loadBank( input );
+		programChange( 0 );
 	}
 		
 	public void saveBank( OutputStream output ) throws IOException {
@@ -227,7 +241,20 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		}
 		
 		public void actionPerformed( ActionEvent e ) {
-			//synthesizer.setModulationController( controller );
+			modulationController = controller;
 		}	
+	}
+	
+	private class ProgramNameListener implements FocusListener, ActionListener {
+		public void focusGained( FocusEvent e ) {
+		}
+		
+		public void focusLost( FocusEvent e ) {
+			synthesizer.setProgramName( programNameField.getText() );
+		}
+
+		public void actionPerformed( ActionEvent e ) {
+			synthesizer.setProgramName( programNameField.getText() );
+		}
 	}
 }
