@@ -80,11 +80,11 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 			ControllerListener controllerListener = new ControllerListener( idx );
 			gbc.weightx = 0;
 			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.gridwidth = 2;
+			gbc.gridwidth = 1;
 			add( new JLabel( synth.getControllerName( idx ) ), gbc );			
 			gbc.weightx = 1;
 			gbc.fill = GridBagConstraints.HORIZONTAL;
-			gbc.gridwidth = 2;
+			gbc.gridwidth = 3;
 			int value = synth.getController( idx );
 			controllers[ idx ] = new JSlider( JSlider.HORIZONTAL, 0, 127, value );
 			controllers[ idx ].addChangeListener( controllerListener );
@@ -148,16 +148,6 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 
 	public void setPitchWheel( int value ) {
 		synthesizer.setPitchWheel( value );
-	}
-	
-	public void setModulationController( final int controlIdx ) {
-		if( controlIdx >= 0 && controlIdx < controllers.length ) {
-			SwingUtilities.invokeLater( new Runnable() {
-				public void run() {
-					modulationAssign[ controlIdx ].doClick();
-				}
-			} );
-		}
 	}
 	
 	public int getModulationController() {
