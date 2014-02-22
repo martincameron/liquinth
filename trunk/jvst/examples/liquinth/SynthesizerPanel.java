@@ -111,6 +111,9 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 			public void run() {
 				for( int ctrlIdx = 0; ctrlIdx < controllers.length; ctrlIdx++ ) {
 					controllers[ ctrlIdx ].setValue( synthesizer.getController( ctrlIdx ) );
+					if( ctrlIdx == synthesizer.getModulationController() ) {
+						modulationAssign[ ctrlIdx ].doClick();
+					}
 				}
 			}
 		} );
