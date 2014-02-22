@@ -16,7 +16,6 @@ public class LiquinthVST extends VSTPluginAdapter {
 	private static final int MIX_BUF_FRAMES = 4096;
 	private Synthesizer synthesizer;
 	private MidiReceiver midiReceiver;
-	private int currentProgram;
 	private int[] mixBuf;
 
 	public LiquinthVST( long wrapper ) {
@@ -48,7 +47,6 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public void setProgram( int index ) {
-		currentProgram = synthesizer.programChange( index );
 	}
 
 	public void setParameter( int index, float value ) {
@@ -60,11 +58,10 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public void setProgramName( String name ) {
-		synthesizer.setProgramName( name );
 	}
 
 	public String getProgramName() {
-		return synthesizer.getProgramName( currentProgram );
+		return "";
 	}
 
 	public String getParameterLabel( int index ) {
@@ -90,7 +87,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public String getProgramNameIndexed( int category, int index ) {
-		return synthesizer.getProgramName( index );
+		return "";
 	}
 
 	public String getEffectName() {
@@ -106,7 +103,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public int getNumPrograms() {
-		return synthesizer.getNumPrograms();
+		return 1;
 	}
 
 	public int getNumParams() {
@@ -118,7 +115,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public int getProgram() {	
-		return currentProgram;
+		return 0;
 	}
 
 	public int getPlugCategory() {

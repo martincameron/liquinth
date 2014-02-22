@@ -36,7 +36,7 @@ public class LiquinthJS extends JFrame {
 	private MidiDevice midiDevice;
 	private Player player;
 	private Thread playThread;
-	private JFileChooser loadBankFileChooser, saveBankFileChooser;
+	private JFileChooser loadPatchFileChooser, savePatchFileChooser;
 	
 	public LiquinthJS() {
 		liquinth = new Liquinth( Player.SAMPLING_RATE * Player.OVERSAMPLE );
@@ -46,18 +46,18 @@ public class LiquinthJS extends JFrame {
 		// Add file menu.
 		JMenu fileMenu = new JMenu( "File" );
 		UIManager.put( "FileChooser.readOnly", Boolean.TRUE );
-		FileNameExtensionFilter filter = new FileNameExtensionFilter( "Sound Bank", "liq" );
+		FileNameExtensionFilter filter = new FileNameExtensionFilter( "Patch File", "pat" );
 		// Add load bank menu item.
-		JMenuItem loadMenuItem = new JMenuItem( "Load Bank" );
-		loadBankFileChooser = new JFileChooser();
-		loadBankFileChooser.setFileFilter( filter );
-		loadMenuItem.addActionListener( new LoadBankMenuItemListener() );
+		JMenuItem loadMenuItem = new JMenuItem( "Load Patch" );
+		loadPatchFileChooser = new JFileChooser();
+		loadPatchFileChooser.setFileFilter( filter );
+		loadMenuItem.addActionListener( new LoadPatchMenuItemListener() );
 		fileMenu.add( loadMenuItem );
 		// Add save bank menu item.
-		JMenuItem saveMenuItem = new JMenuItem( "Save Bank" );
-		saveBankFileChooser = new JFileChooser();
-		saveBankFileChooser.setFileFilter( filter );
-		saveMenuItem.addActionListener( new SaveBankMenuItemListener() );
+		JMenuItem saveMenuItem = new JMenuItem( "Save Patch" );
+		savePatchFileChooser = new JFileChooser();
+		savePatchFileChooser.setFileFilter( filter );
+		saveMenuItem.addActionListener( new SavePatchMenuItemListener() );
 		fileMenu.add( saveMenuItem );
 		// Add quit menu item.
 		fileMenu.add( new JSeparator() );
@@ -152,15 +152,15 @@ public class LiquinthJS extends JFrame {
 		}
 	}
 
-	private class LoadBankMenuItemListener implements ActionListener {
+	private class LoadPatchMenuItemListener implements ActionListener {
 		public void actionPerformed( ActionEvent event ) {
-			int result = loadBankFileChooser.showOpenDialog( LiquinthJS.this );
+			int result = loadPatchFileChooser.showOpenDialog( LiquinthJS.this );
 			if( result == JFileChooser.APPROVE_OPTION ) {
 				try {
-					File file = loadBankFileChooser.getSelectedFile();
+					File file = loadPatchFileChooser.getSelectedFile();
 					FileInputStream inputStream = new FileInputStream( file );
 					try {
-						synthesizerPanel.loadBank( inputStream );
+						synthesizerPanel.loadPatch( inputStream );
 					} finally {
 						inputStream.close();
 					}
@@ -172,18 +172,18 @@ public class LiquinthJS extends JFrame {
 		}
 	} 
 
-	private class SaveBankMenuItemListener implements ActionListener {
+	private class SavePatchMenuItemListener implements ActionListener {
 		public void actionPerformed( ActionEvent event ) {
-			int result = saveBankFileChooser.showSaveDialog( LiquinthJS.this );
+			int result = savePatchFileChooser.showSaveDialog( LiquinthJS.this );
 			if( result == JFileChooser.APPROVE_OPTION ) {
 				try {
-					File file = saveBankFileChooser.getSelectedFile();
+					File file = savePatchFileChooser.getSelectedFile();
 					if( file.exists() ) {
 						throw new Exception( "File already exists!" );
 					}
 					FileOutputStream outputStream = new FileOutputStream( file );
 					try {
-						synthesizerPanel.saveBank( outputStream );
+						synthesizerPanel.savePatch( outputStream );
 					} finally {
 						outputStream.close();
 					}

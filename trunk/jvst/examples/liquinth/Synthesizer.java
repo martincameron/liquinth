@@ -2,6 +2,7 @@
 package jvst.examples.liquinth;
 
 public interface Synthesizer {
+	public char getVersion();
 	public void noteOn( int key, int velocity );
 	public void noteOff( int key );
 	public void allNotesOff( boolean soundOff );
@@ -17,12 +18,6 @@ public interface Synthesizer {
 	public int getAttackController();
 	public int getReleaseController();
 	public int getCutoffController();
-	public int getResonanceController();
-	public int getNumPrograms();
-	public int programChange( int progIdx );
-	public String getProgramName( int progIdx );
-	public void setProgramName( String name );
-	public void loadBank( java.io.InputStream input ) throws java.io.IOException;
-	public void saveBank( java.io.OutputStream output ) throws java.io.IOException;
+	public int getResonanceController();	
 	public void getAudio( int[] mixBuf, int length );
 }
