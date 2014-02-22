@@ -27,8 +27,6 @@ import javax.swing.event.ChangeListener;
 public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private Synthesizer synthesizer;
 	private JSlider[] controllers;
-	private SpinnerNumberModel programChangeSpinnerModel;
-	private JTextField programNameField;
 	private JRadioButton[] modulationAssign;
 	private int modulationController;
 
@@ -40,38 +38,6 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.insets = new Insets( 2, 2, 2, 2 );
-		gbc.weightx = 0;
-		gbc.gridwidth = 1;
-		add( new JLabel( "Program" ), gbc );
-		gbc.weightx = 0;
-		gbc.gridwidth = 1;
-		programChangeSpinnerModel = new SpinnerNumberModel( 0, 0, 127, 1 );
-		JSpinner programChangeSpinner = new JSpinner( programChangeSpinnerModel );
-		programChangeSpinner.addChangeListener( new ChangeListener() {
-			public void stateChanged( ChangeEvent e ) {
-				programChange( programChangeSpinnerModel.getNumber().intValue() );
-			}
-		} );
-		add( programChangeSpinner, gbc );	
-		gbc.weightx = 1;
-		gbc.gridwidth = 1;
-		programNameField = new JTextField();
-		ProgramNameListener programNameListener = new ProgramNameListener();
-		programNameField.addActionListener( programNameListener );
-		programNameField.addFocusListener( programNameListener );
-		add( programNameField, gbc );
-		gbc.weightx = 0;
-		gbc.gridwidth = 1;
-		javax.swing.JButton resetButton = new javax.swing.JButton( "Reset" );
-		resetButton.addActionListener( new ActionListener() {
-			public void actionPerformed( ActionEvent e ) {
-				resetAllControllers();
-			}
-		} );
-		add( resetButton, gbc );
-		gbc.weightx = 0;
-		gbc.gridwidth = GridBagConstraints.REMAINDER;
-		add( new JLabel( "Mod" ), gbc );
 		int numControllers = synth.getNumControllers();
 		controllers = new JSlider[ numControllers ];
 		modulationAssign = new JRadioButton[ numControllers ];
@@ -98,7 +64,11 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 			buttonGroup.add( modulationAssign[ idx ] );
 			add( modulationAssign[ idx ], gbc );
 		}
-		programChange( 0 );
+		resetAllControllers();
+	}
+
+	public char getVersion() {
+		return synthesizer.getVersion();
 	}
 
 	public void noteOn( int key, int velocity ) {
@@ -177,46 +147,46 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	public int getResonanceController() {
 		return synthesizer.getResonanceController();
 	}
-
-	public int getNumPrograms() {
-		return synthesizer.getNumPrograms();
-	}
-
-	public int programChange( int programIdx ) {
-		final int progIdx = synthesizer.programChange( programIdx );
-		SwingUtilities.invokeLater( new Runnable() {
-			public void run() {
-				programChangeSpinnerModel.setValue( Integer.valueOf( progIdx ) );
-				programNameField.setText( synthesizer.getProgramName( progIdx ) );
-				modulationController = synthesizer.getModulationController();
-				modulationAssign[ modulationController ].setSelected( true );
-				for( int ctrlIdx = 0; ctrlIdx < controllers.length; ctrlIdx++ ) {
-					controllers[ ctrlIdx ].setValue( synthesizer.getController( ctrlIdx ) );
-				}
-			}
-		} );		
-		return progIdx;
-	}
-
-	public String getProgramName( int progIdx ) {
-		return synthesizer.getProgramName( progIdx );
-	}
-
-	public void setProgramName( String name ) {
-		synthesizer.setProgramName( name );
-	}
-
-	public void loadBank( InputStream input ) throws IOException {
-		synthesizer.loadBank( input );
-		programChange( 0 );
-	}
-		
-	public void saveBank( OutputStream output ) throws IOException {
-		synthesizer.saveBank( output );
-	}
 	
 	public void getAudio( int[] mixBuf, int length ) {
 		synthesizer.getAudio( mixBuf, length );
+	}
+
+	public void loadPatch( java.io.InputStream input ) throws java.io.IOException {
+		resetAllControllers();
+		int chr = input.read();
+		for( int ctlIdx = 0; ctlIdx < controllers.length; ctlIdx++ ) {
+			int value = 0;
+			while( chr > synthesizer.getVersion() ) {
+				/* Skip controllers from future versions. */
+				chr = input.read();
+				while( chr >= '0' && chr <= '9' ) {
+					chr = input.read();
+				}
+			}
+			if( chr > 32 ) {
+				chr = input.read();
+				while( chr >= '0' && chr <= '9' ) {
+					value = value * 10 + chr - '0';
+					chr = input.read();
+				}
+			}
+			setController( ctlIdx, value & 0x7F );
+		}
+	}
+
+	public synchronized void savePatch( java.io.OutputStream output ) throws java.io.IOException {
+		char version = synthesizer.getVersion();
+		for( int ctlIdx = 0; ctlIdx < controllers.length; ctlIdx++ ) {
+			int ctlValue = synthesizer.getController( ctlIdx );
+			/* The lowest version the controller is available. */
+			output.write( version );
+			/* The controller value in decimal. */
+			output.write( '0' + ctlValue / 100 );
+			output.write( '0' + ctlValue % 100 / 10 );
+			output.write( '0' + ctlValue % 10 );
+		}
+		output.write( '\n' );
 	}
 
 	private class ControllerListener implements ChangeListener, ActionListener {
@@ -233,18 +203,5 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		public void actionPerformed( ActionEvent e ) {
 			modulationController = controller;
 		}	
-	}
-	
-	private class ProgramNameListener implements FocusListener, ActionListener {
-		public void focusGained( FocusEvent e ) {
-		}
-		
-		public void focusLost( FocusEvent e ) {
-			synthesizer.setProgramName( programNameField.getText() );
-		}
-
-		public void actionPerformed( ActionEvent e ) {
-			synthesizer.setProgramName( programNameField.getText() );
-		}
 	}
 }

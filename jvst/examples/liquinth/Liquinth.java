@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140219;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn46";
+	public static final int REVISION = 42, RELEASE_DATE = 20140222;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn48";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
@@ -25,17 +25,13 @@ public class Liquinth implements Synthesizer {
 		CTRL_SUB_OSCILLATOR = 15,
 		CTRL_TIMBRE = 16,
 		NUM_CONTROLLERS = 17,
-		NUM_VOICES = 16,
-		NUM_PROGRAMS = 16;
+		NUM_VOICES = 16;
 
 	private MoogFilter filter;
 	private Envelope filterEnv;
 	private Voice[] voices;
 	private byte[] keyStatus, controllers;
-	private int sampleRate, programIdx;
-	private int filterCutoff1, filterCutoff2;
-	private String[] programNames;
-	private byte[] programBank;
+	private int sampleRate, filterCutoff1, filterCutoff2;
 
 	public Liquinth( int samplingRate ) {
 		sampleRate = samplingRate;
@@ -43,18 +39,17 @@ public class Liquinth implements Synthesizer {
 		voices = new Voice[ NUM_VOICES ];
 		keyStatus = new byte[ 128 ];
 		controllers = new byte[ NUM_CONTROLLERS ];
-		programNames = new String[ NUM_PROGRAMS ];
-		programBank = new byte[ NUM_CONTROLLERS * NUM_PROGRAMS ];
 		filterEnv = new Envelope( sampleRate );
 		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 			voices[ idx ] = new Voice( sampleRate );
 			voices[ idx ].keyOn( idx );
 		}
 		allNotesOff( true );
-		programNames[ 0 ] = "Sawtooth";
-		programBank[ CTRL_OVERDRIVE ] = 32;
-		programBank[ CTRL_FILTER_CUTOFF ] = 127;
 		resetAllControllers();
+	}
+
+	public char getVersion() {
+		return REVISION;
 	}
 
 	public int getNumControllers() {
@@ -307,9 +302,15 @@ public class Liquinth implements Synthesizer {
 	}
 	
 	public synchronized void resetAllControllers() {
-		/* Reload the controller values from the bank. */
 		for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
-			setController( ctlIdx, programBank[ programIdx * NUM_CONTROLLERS + ctlIdx ] );
+			int ctlValue = 0;
+			if( ctlIdx == CTRL_OVERDRIVE ) {
+				ctlValue = 32;
+			}
+			if( ctlIdx == CTRL_FILTER_CUTOFF ) {
+				ctlValue = 127;
+			}
+			setController( ctlIdx, ctlValue );
 		}
 	}
 
@@ -353,101 +354,6 @@ public class Liquinth implements Synthesizer {
 		}
 		for( int idx = 0; idx < 128; idx++ ) {
 			keyStatus[ idx ] = 0;
-		}
-	}
-
-	public int getNumPrograms() {
-		return NUM_PROGRAMS;
-	}
-
-	public synchronized int programChange( int prgIdx ) {
-		if( prgIdx >= 0 && prgIdx < NUM_PROGRAMS ) {
-			for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
-				/* Save the current controller values to the bank.*/
-				programBank[ programIdx * NUM_CONTROLLERS + ctlIdx ] = controllers[ ctlIdx ];
-				setController( ctlIdx, programBank[ prgIdx * NUM_CONTROLLERS + ctlIdx ] );
-			}
-			programIdx = prgIdx;
-		}
-		return programIdx;
-	}
-
-	public synchronized String getProgramName( int prgIdx ) {
-		String name = null;
-		if( prgIdx >= 0 && prgIdx < NUM_PROGRAMS ) {
-			name = programNames[ prgIdx ];
-		}
-		return ( name != null ) ? name : "";
-	}
-	
-	public synchronized void setProgramName( String name ) {
-		programNames[ programIdx ] = ( name != null ) ? name : "";
-	}
-
-	public synchronized void loadBank( java.io.InputStream input ) throws java.io.IOException {
-		char[] name = new char[ 256 ];
-		int chr = input.read();
-		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
-			while( chr >= 0 && chr <= 32 ) {
-				/* Skip whitespace. */
-				chr = input.read();
-			}
-			for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
-				int value = 0;
-				while( chr > REVISION ) {
-					/* Skip unsupported controller values. */
-					chr = input.read();
-				}
-				if( chr > '#' ) {
-					/* Read controller value. */
-					chr = input.read();
-					while( chr >= '0' && chr <= '9' ) {
-						value = value * 10 + chr - '0';
-						chr = input.read();
-					}
-				}
-				programBank[ prgIdx * NUM_CONTROLLERS + ctlIdx ] = ( byte ) ( value & 0x7F );
-			}
-			while( chr > 32 && chr != '#' ) {
-				/* Skip to name token. */
-				chr = input.read();
-			}
-			int nameIdx = 0;
-			chr = input.read();
-			while( chr >= 32 ) {
-				/* Read name characters. */
-				if( nameIdx < name.length ) {
-					name[ nameIdx++ ] = ( char ) chr;
-				}
-				chr = input.read();
-			}
-			programNames[ prgIdx ] = new String( name, 0, nameIdx );
-		}
-		resetAllControllers();
-	}
-	
-	public synchronized void saveBank( java.io.OutputStream output ) throws java.io.IOException {
-		/* Save the current controller settings to the program bank. */
-		programChange( programIdx );
-		for( int prgIdx = 0; prgIdx < NUM_PROGRAMS; prgIdx++ ) {
-			for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
-				int ctlValue = programBank[ prgIdx * NUM_CONTROLLERS + ctlIdx ];
-				/* The lowest revision the controller is available. */
-				output.write( 42 );
-				/* The controller value in decimal. */
-				output.write( '0' + ctlValue / 100 );
-				output.write( '0' + ctlValue % 100 / 10 );
-				output.write( '0' + ctlValue % 10 );
-			}
-			output.write( '#' );
-			String name = programNames[ prgIdx ];
-			if( name != null ) {
-				for( int idx = 0; idx < name.length(); idx++ ) {
-					char chr = name.charAt( idx );
-					output.write( chr < 32 ? 32 : ( byte ) chr );
-				}
-			}
-			output.write( '\n' );
 		}
 	}
 }
