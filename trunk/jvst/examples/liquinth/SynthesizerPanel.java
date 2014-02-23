@@ -151,6 +151,10 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		return synthesizer.getResonanceController();
 	}
 	
+	public int programChange( int programIdx ) {
+		return synthesizer.programChange( programIdx );
+	}
+	
 	public void getAudio( int[] mixBuf, int length ) {
 		synthesizer.getAudio( mixBuf, length );
 	}

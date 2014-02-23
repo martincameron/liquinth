@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140222;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn49";
+	public static final int REVISION = 42, RELEASE_DATE = 20140223;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn50";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
@@ -340,6 +340,10 @@ public class Liquinth implements Synthesizer {
 
 	public int getModulationController() {
 		return CTRL_VIBRATO_DEPTH;
+	}
+
+	public int programChange( int programIdx ) {
+		return 0;
 	}
 
 	public synchronized void setPitchWheel( int octaves ) {
