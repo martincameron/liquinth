@@ -89,7 +89,7 @@ public class MidiReceiver implements Receiver {
 				}				
 				break;
 			case 0xC: /* Program change.*/
-				/* int programIdx = msgData[ 1 ] & 0x7F; */
+				synthesizer.programChange( msgData[ 1 ] & 0x7F );
 				break;
 			case 0xE: /* Pitch wheel.*/
 				ctrlValue = ( msgData[ 1 ] & 0x7F ) | ( ( msgData[ 2 ] & 0x7F ) << 7 );

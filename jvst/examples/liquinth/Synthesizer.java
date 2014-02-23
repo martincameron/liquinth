@@ -18,6 +18,7 @@ public interface Synthesizer {
 	public int getAttackController();
 	public int getReleaseController();
 	public int getCutoffController();
-	public int getResonanceController();	
+	public int getResonanceController();
+	public int programChange( int programIdx );
 	public void getAudio( int[] mixBuf, int length );
 }
