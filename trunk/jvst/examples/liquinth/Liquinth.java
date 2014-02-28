@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140223;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn50";
+	public static final int REVISION = 42, RELEASE_DATE = 20140228;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn51";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
@@ -314,31 +314,31 @@ public class Liquinth implements Synthesizer {
 		}
 	}
 
-	public int getPortamentoController() {
+	public int getPortamentoControlIdx() {
 		return CTRL_PORTAMENTO;
 	}
 	
-	public int getWaveformController() {
+	public int getWaveformControlIdx() {
 		return CTRL_WAVEFORM;
 	}
 
-	public int getAttackController() {
+	public int getAttackControlIdx() {
 		return CTRL_VOLUME_ATTACK;
 	}
 	
-	public int getReleaseController() {
+	public int getReleaseControlIdx() {
 		return CTRL_VOLUME_RELEASE;
 	}
 	
-	public int getCutoffController() {
+	public int getCutoffControlIdx() {
 		return CTRL_FILTER_CUTOFF;		
 	}
 	
-	public int getResonanceController() {
+	public int getResonanceControlIdx() {
 		return CTRL_FILTER_RESONANCE;
 	}
 
-	public int getModulationController() {
+	public int getModulationControlIdx() {
 		return CTRL_VIBRATO_DEPTH;
 	}
 

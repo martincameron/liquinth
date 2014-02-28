@@ -12,13 +12,13 @@ public interface Synthesizer {
 	public void setController( int controlIdx, int value );
 	public void resetAllControllers();
 	public void setPitchWheel( int value );
-	public int getModulationController();
-	public int getPortamentoController();
-	public int getWaveformController();
-	public int getAttackController();
-	public int getReleaseController();
-	public int getCutoffController();
-	public int getResonanceController();
+	public int getModulationControlIdx();
+	public int getPortamentoControlIdx();
+	public int getWaveformControlIdx();
+	public int getAttackControlIdx();
+	public int getReleaseControlIdx();
+	public int getCutoffControlIdx();
+	public int getResonanceControlIdx();
 	public int programChange( int programIdx );
 	public void getAudio( int[] mixBuf, int length );
 }

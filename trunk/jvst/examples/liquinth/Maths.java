@@ -33,9 +33,8 @@ public class Maths {
 		Calculate base-2 log of x (fixed-point).
 	*/
 	public static int log2( int x ) {
-		int shift;
 		/* Scale x to range 1.0 <= x < 2.0 */
-		shift = 0;
+		int shift = 0;
 		while( x < FP_ONE ) {
 			x <<= 1;
 			shift--;
@@ -51,17 +50,15 @@ public class Maths {
 		Raise 2 to the power of x (fixed-point).
 	*/
 	public static int exp2( int x ) {
-		int y;
-		y = interpolateTable( exp2Table, x & FP_MASK ) << FP_SHIFT;
-		return y >> FP_SHIFT - ( x >> FP_SHIFT );
+		int y = interpolateTable( exp2Table, x & FP_MASK ) << FP_SHIFT;
+		return y >> ( FP_SHIFT - ( x >> FP_SHIFT ) );
 	}
 
 	/*
 		Calculate sin( x * PI ), fixed point x.
 	*/
 	public static int sine( int x ) {
-		int y;
-		y = interpolateTable( sineTable, x & FP_MASK );
+		int y = interpolateTable( sineTable, x & FP_MASK );
 		if( ( x & FP_ONE ) != 0 ) {
 			y = -y;
 		}
@@ -69,11 +66,10 @@ public class Maths {
 	}
 
 	private static int interpolateTable( int[] table, int x ) {
-		int tabIdx, c, m;
-		tabIdx = x >> FP_SHIFT - TABLE_ACCURACY;
-		c = table[ tabIdx ];
-		m = table[ tabIdx + 1 ] - c;
+		int tabIdx = x >> ( FP_SHIFT - TABLE_ACCURACY );
+		int c = table[ tabIdx ];
+		int m = table[ tabIdx + 1 ] - c;
 		m = m * ( x & ( FP_MASK >> TABLE_ACCURACY ) );
-		return c + ( m >> FP_SHIFT - TABLE_ACCURACY );
+		return c + ( m >> ( FP_SHIFT - TABLE_ACCURACY ) );
 	}
 }

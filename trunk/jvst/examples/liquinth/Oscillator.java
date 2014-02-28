@@ -73,13 +73,14 @@ public class Oscillator {
 		int damp = ( ( ampl2 << 16 ) - ampl ) / length;
 		short[] oddTab = oddHarmonics[ table ];
 		short[] evnTab = evenHarmonics[ table ];
-		for( int end = offset + length; offset < end; offset++ ) {
+		int end = offset + length;
+		while( offset < end ) {
 			int w = pulseWidth[ pWidth1 ];
 			int x = phase >> Maths.FP_SHIFT;
 			int y = ( oddTab[ x >> 1 ] * subAmp ) >> Maths.FP_SHIFT;
 			x = ( ( x < w ) ? ( x * oddScale[ pWidth1 ] ) : ( x - w ) * evenScale[ pWidth1 ] ) >> Maths.FP_SHIFT;
 			y = y + oddTab[ x ] + ( ( evnTab[ x ] * evnAmp ) >> Maths.FP_SHIFT );
-			outBuf[ offset ] += ( y * ( ampl >> 16 ) ) >> Maths.FP_SHIFT;
+			outBuf[ offset++ ] += ( y * ( ampl >> 16 ) ) >> Maths.FP_SHIFT;
 			phase = phase + ( step >> 4 );
 			if( phase > PHASE_MASK ) {
 				pWidth1 = pwid >> Maths.FP_SHIFT;

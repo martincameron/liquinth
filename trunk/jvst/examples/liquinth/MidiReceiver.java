@@ -24,13 +24,12 @@ public class MidiReceiver implements Receiver {
 	}
 
 	public void send( byte[] msgData ) {
-		int ctrlIndex, ctrlValue, msgStatus, msgChannel;
-		msgStatus = ( msgData[ 0 ] & 0xF0 ) >> 4;
+		int msgStatus = ( msgData[ 0 ] & 0xF0 ) >> 4;
 		if( msgStatus == 0xF ) {
 			/* Ignore system messages.*/
 			return;
 		}
-		msgChannel = ( msgData[ 0 ] & 0xF ) + 1;
+		int msgChannel = ( msgData[ 0 ] & 0xF ) + 1;
 		if( msgChannel != midiChannel ) {
 			/* Message not on our channel.*/
 			return;
@@ -50,29 +49,29 @@ public class MidiReceiver implements Receiver {
 				}
 				break;
 			case 0xB: /* Control change.*/
-				ctrlIndex = msgData[ 1 ] & 0x7F;
-				ctrlValue = msgData[ 2 ] & 0x7F;
+				int ctrlIndex = msgData[ 1 ] & 0x7F;
+				int ctrlValue = msgData[ 2 ] & 0x7F;
 				switch( ctrlIndex ) {
 					case 1: /* Modulation wheel. */
-						synthesizer.setController( synthesizer.getModulationController(), ctrlValue );
+						synthesizer.setController( synthesizer.getModulationControlIdx(), ctrlValue );
 						break;
 					case 5: /* Portamento.*/
-						synthesizer.setController( synthesizer.getPortamentoController(), ctrlValue );
+						synthesizer.setController( synthesizer.getPortamentoControlIdx(), ctrlValue );
 						break;
 					case 70: /* Waveform.*/
-						synthesizer.setController( synthesizer.getWaveformController(), ctrlValue );
+						synthesizer.setController( synthesizer.getWaveformControlIdx(), ctrlValue );
 						break;
 					case 71: /* Resonance.*/
-						synthesizer.setController( synthesizer.getResonanceController(), ctrlValue );
+						synthesizer.setController( synthesizer.getResonanceControlIdx(), ctrlValue );
 						break;
 					case 72: /* Release. */
-						synthesizer.setController( synthesizer.getReleaseController(), ctrlValue );
+						synthesizer.setController( synthesizer.getReleaseControlIdx(), ctrlValue );
 						break;
 					case 73: /* Attack.*/
-						synthesizer.setController( synthesizer.getAttackController(), ctrlValue );
+						synthesizer.setController( synthesizer.getAttackControlIdx(), ctrlValue );
 						break;
 					case 74: /* Cutoff. */
-						synthesizer.setController( synthesizer.getCutoffController(), ctrlValue );
+						synthesizer.setController( synthesizer.getCutoffControlIdx(), ctrlValue );
 						break;
 					case 120: /* All sound off. */
 						synthesizer.allNotesOff( true );
@@ -92,12 +91,12 @@ public class MidiReceiver implements Receiver {
 				synthesizer.programChange( msgData[ 1 ] & 0x7F );
 				break;
 			case 0xE: /* Pitch wheel.*/
-				ctrlValue = ( msgData[ 1 ] & 0x7F ) | ( ( msgData[ 2 ] & 0x7F ) << 7 );
-				if( ctrlValue > 8191 ) {
-					ctrlValue = ctrlValue - 16384;
+				int wheelValue = ( msgData[ 1 ] & 0x7F ) | ( ( msgData[ 2 ] & 0x7F ) << 7 );
+				if( wheelValue > 8191 ) {
+					wheelValue = wheelValue - 16384;
 				}
-				ctrlValue = ( ctrlValue << 18 ) >> ( 31 - Maths.FP_SHIFT );
-				synthesizer.setPitchWheel( ctrlValue / 6 );
+				wheelValue = ( ( wheelValue << 18 ) >> ( 31 - Maths.FP_SHIFT ) ) / 6;
+				synthesizer.setPitchWheel( wheelValue );
 				break;
 		}
 	}
