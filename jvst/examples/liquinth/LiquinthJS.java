@@ -36,6 +36,7 @@ public class LiquinthJS extends JFrame {
 	private MidiDevice midiDevice;
 	private Player player;
 	private Thread playThread;
+	private FileNameExtensionFilter patchFileFilter;
 	private JFileChooser loadPatchFileChooser, savePatchFileChooser;
 	
 	public LiquinthJS() {
@@ -46,17 +47,17 @@ public class LiquinthJS extends JFrame {
 		// Add file menu.
 		JMenu fileMenu = new JMenu( "File" );
 		UIManager.put( "FileChooser.readOnly", Boolean.TRUE );
-		FileNameExtensionFilter filter = new FileNameExtensionFilter( "Patch File", "pat" );
+		patchFileFilter = new FileNameExtensionFilter( "Patch File (*.pat)", "pat" );
 		// Add load bank menu item.
 		JMenuItem loadMenuItem = new JMenuItem( "Load Patch" );
 		loadPatchFileChooser = new JFileChooser();
-		loadPatchFileChooser.setFileFilter( filter );
+		loadPatchFileChooser.setFileFilter( patchFileFilter );
 		loadMenuItem.addActionListener( new LoadPatchMenuItemListener() );
 		fileMenu.add( loadMenuItem );
 		// Add save bank menu item.
 		JMenuItem saveMenuItem = new JMenuItem( "Save Patch" );
 		savePatchFileChooser = new JFileChooser();
-		savePatchFileChooser.setFileFilter( filter );
+		savePatchFileChooser.setFileFilter( patchFileFilter );
 		saveMenuItem.addActionListener( new SavePatchMenuItemListener() );
 		fileMenu.add( saveMenuItem );
 		// Add quit menu item.
@@ -180,6 +181,9 @@ public class LiquinthJS extends JFrame {
 					File file = savePatchFileChooser.getSelectedFile();
 					if( file.exists() ) {
 						throw new Exception( "File already exists!" );
+					}
+					if( !patchFileFilter.accept( file ) ) {
+						file = new File( file.getPath() + ".pat" );
 					}
 					FileOutputStream outputStream = new FileOutputStream( file );
 					try {

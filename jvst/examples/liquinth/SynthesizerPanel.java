@@ -28,7 +28,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private Synthesizer synthesizer;
 	private JSlider[] controllers;
 	private JRadioButton[] modulationAssign;
-	private int modulationController;
+	private int modulationControlIdx;
 
 	public SynthesizerPanel( Synthesizer synth ) {	
 		synthesizer = synth;
@@ -111,7 +111,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 			public void run() {
 				for( int ctrlIdx = 0; ctrlIdx < controllers.length; ctrlIdx++ ) {
 					controllers[ ctrlIdx ].setValue( synthesizer.getController( ctrlIdx ) );
-					if( ctrlIdx == synthesizer.getModulationController() ) {
+					if( ctrlIdx == synthesizer.getModulationControlIdx() ) {
 						modulationAssign[ ctrlIdx ].doClick();
 					}
 				}
@@ -123,32 +123,32 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		synthesizer.setPitchWheel( value );
 	}
 	
-	public int getModulationController() {
-		return modulationController;
+	public int getModulationControlIdx() {
+		return modulationControlIdx;
 	}
 
-	public int getPortamentoController() {
-		return synthesizer.getPortamentoController();
+	public int getPortamentoControlIdx() {
+		return synthesizer.getPortamentoControlIdx();
 	}
 	
-	public int getWaveformController() {
-		return synthesizer.getWaveformController();
+	public int getWaveformControlIdx() {
+		return synthesizer.getWaveformControlIdx();
 	}
 
-	public int getAttackController() {
-		return synthesizer.getAttackController();
+	public int getAttackControlIdx() {
+		return synthesizer.getAttackControlIdx();
 	}
 	
-	public int getReleaseController() {
-		return synthesizer.getReleaseController();
+	public int getReleaseControlIdx() {
+		return synthesizer.getReleaseControlIdx();
 	}
 	
-	public int getCutoffController() {
-		return synthesizer.getCutoffController();
+	public int getCutoffControlIdx() {
+		return synthesizer.getCutoffControlIdx();
 	}
 	
-	public int getResonanceController() {
-		return synthesizer.getResonanceController();
+	public int getResonanceControlIdx() {
+		return synthesizer.getResonanceControlIdx();
 	}
 	
 	public int programChange( int programIdx ) {
@@ -197,18 +197,18 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	}
 
 	private class ControllerListener implements ChangeListener, ActionListener {
-		private int controller;
+		private int ctrlIdx;
 
 		public ControllerListener( int controlIdx ) {
-			controller = controlIdx;
+			ctrlIdx = controlIdx;
 		}
 
 		public void stateChanged( ChangeEvent e ) {
-			synthesizer.setController( controller, controllers[ controller ].getValue() );
+			synthesizer.setController( ctrlIdx, controllers[ ctrlIdx ].getValue() );
 		}
 		
 		public void actionPerformed( ActionEvent e ) {
-			modulationController = controller;
+			modulationControlIdx = ctrlIdx;
 		}	
 	}
 }

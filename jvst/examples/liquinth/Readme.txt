@@ -1,5 +1,5 @@
 
-Liquinth (c)2012 mumart@gmail.com
+Liquinth (c)2014 mumart@gmail.com
 
 Liquinth is a relatively simple polysynth for Java.
 It can be used either standalone from the JAR file,
@@ -8,6 +8,19 @@ or as a VST instrument via jVSTwRapper.
 Please let me know how you get on!
 
 Changes
+
+Version a42 has been almost completely overhauled.
+The overall sound quality is vastly improved, with
+a much fatter-sounding pulse-width implementation, more
+responsive envelopes, a more natural amplitude curve,
+and more overdrive.
+The filter envelope now has an attack phase. If this
+is set to zero the filter will release instantaneously
+as in previous versions.
+The pulse-width control now has a modulation depth,
+tied to the vibrato rate.
+There is now a sub-oscillator which generates a square
+wave one octave below the current frequency.
 
 Version a41 has a few code improvements,
 but there should be no changes to the performance.
@@ -40,18 +53,20 @@ stuck you can release them with the space bar or the
 return key.
 
 When using MIDI input the sliders are assigned to modulation
-controllers 20 onwards. You can also use the interface to
-assign one of the sliders to controller 1, which is usually
-the default for the first modulation wheel.
+controllers 20 onwards. You can also use the radio buttons
+next to the sliders assign them to MIDI controller 1, which
+is usually the default for the first modulation wheel.
+Some of the standard MIDI controllers are also mapped automatically,
+such as Attack, Release, and Filter Cutoff.
 
 Configuring jVSTwRapper
 
 When configuring Liquinth as a VST instrument, your jVSTwrapper
-configuration file should contain the following entries:
+configuration file should contain the following additional entries:
 
-PluginClass=jvst/examples/liquinth/LiquinthVST
-PluginUIClass=jvst/examples/liquinth/LiquinthVSTGUI
-ClassPath={WrapperPath}\jVSTwRapper-0.9g.jar;{WrapperPath}\liquinth-a36.jar
+PluginClass=jvst/examples/liquinth/vst/LiquinthVST
+PluginUIClass=jvst/examples/liquinth/vst/LiquinthVSTGUI
+ClassPath={WrapperPath}\liquinth-a42.jar
 
 Kind Regards,
 Martin
