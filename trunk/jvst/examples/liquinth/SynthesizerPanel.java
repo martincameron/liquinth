@@ -67,6 +67,10 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		resetAllControllers();
 	}
 
+	public int setSamplingRate( int samplingRate ) {
+		return synthesizer.setSamplingRate( samplingRate );
+	}
+
 	public char getVersion() {
 		return synthesizer.getVersion();
 	}
