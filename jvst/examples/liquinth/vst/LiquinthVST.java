@@ -20,8 +20,10 @@ public class LiquinthVST extends VSTPluginAdapter {
 
 	public LiquinthVST( long wrapper ) {
 		super( wrapper );
-		setSampleRate( 48000 );
+		synthesizer = new Liquinth( 48000 );
+		midiReceiver = new MidiReceiver( synthesizer );
 		mixBuf = new int[ MIX_BUF_FRAMES ];
+		setProgram( 0 );
 		setNumInputs( 0 );
 		setNumOutputs( 1 );
 		canProcessReplacing( true );
@@ -31,9 +33,11 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public SynthesizerPanel initGui() {
-		synthesizer = new SynthesizerPanel( synthesizer );
-		midiReceiver = new MidiReceiver( synthesizer );
-		return ( SynthesizerPanel ) synthesizer;
+		if( !( synthesizer instanceof SynthesizerPanel ) ) {
+			synthesizer = new SynthesizerPanel( synthesizer );
+			midiReceiver = new MidiReceiver( synthesizer );
+		}
+		return (SynthesizerPanel) synthesizer;
 	}
 	
 	private void setController( int ctrlIdx, int value ) {
@@ -41,9 +45,7 @@ public class LiquinthVST extends VSTPluginAdapter {
 	}
 
 	public void setSampleRate( float sampleRate ) {
-		synthesizer = new Liquinth( ( int ) sampleRate );
-		midiReceiver = new MidiReceiver( synthesizer );
-		setProgram( 0 );
+		synthesizer.setSamplingRate( ( int ) sampleRate );
 	}
 
 	public void setProgram( int index ) {
@@ -161,7 +163,14 @@ public class LiquinthVST extends VSTPluginAdapter {
 		for( int evIdx = 0; evIdx < numEvents; evIdx++ ) {
 			VSTEvent event = events[ evIdx ];
 			if( event.getType() == VSTEvent.VST_EVENT_MIDI_TYPE ) {
-				midiReceiver.send( ( ( VSTMidiEvent ) event ).getData() );
+				byte[] msgData = ( ( VSTMidiEvent ) event ).getData();
+				if( ( msgData[ 0 ] & 0xF0 ) == 0xE0 ) {
+					// Convert pitch wheel value from unsigned to signed.
+					int ctrlValue = ( ( msgData[ 1 ] & 0x7F ) | ( ( msgData[ 2 ] & 0x7F ) << 7 ) ) - 8192;
+					msgData[ 1 ] = ( byte ) ctrlValue;
+					msgData[ 2 ] = ( byte ) ( ctrlValue >> 7 );
+				}
+				midiReceiver.send( msgData );
 			}
 		}
 		return 1;
