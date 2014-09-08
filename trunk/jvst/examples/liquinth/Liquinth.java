@@ -2,29 +2,31 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140308;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn52";
+	public static final int REVISION = 42, RELEASE_DATE = 20140908;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn53";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
 		CTRL_OVERDRIVE = 0,
-		CTRL_FILTER_CUTOFF = 1,
-		CTRL_FILTER_RESONANCE = 2,
-		CTRL_FILTER_ATTACK = 3,
-		CTRL_FILTER_SUSTAIN = 4,
-		CTRL_FILTER_DECAY = 5,
-		CTRL_PORTAMENTO = 6,
-		CTRL_WAVEFORM = 7,
-		CTRL_VOLUME_ATTACK = 8,
-		CTRL_VOLUME_RELEASE = 9,
-		CTRL_OSCILLATOR_DETUNE = 10,
-		CTRL_VIBRATO_SPEED = 11,
-		CTRL_VIBRATO_DEPTH = 12,
-		CTRL_PULSE_WIDTH = 13,
-		CTRL_PULSE_WIDTH_MODULATION = 14,
-		CTRL_SUB_OSCILLATOR = 15,
-		CTRL_TIMBRE = 16,
-		NUM_CONTROLLERS = 17,
+		CTRL_REVERB_TIME = 1,
+		CTRL_FILTER_CUTOFF = 2,
+		CTRL_FILTER_RESONANCE = 3,
+		CTRL_FILTER_DETUNE = 4,
+		CTRL_FILTER_ATTACK = 5,
+		CTRL_FILTER_SUSTAIN = 6,
+		CTRL_FILTER_DECAY = 7,
+		CTRL_PORTAMENTO = 8,
+		CTRL_WAVEFORM = 9,
+		CTRL_VOLUME_ATTACK = 10,
+		CTRL_VOLUME_RELEASE = 11,
+		CTRL_OSCILLATOR_DETUNE = 12,
+		CTRL_VIBRATO_SPEED = 13,
+		CTRL_VIBRATO_DEPTH = 14,
+		CTRL_PULSE_WIDTH = 15,
+		CTRL_PULSE_WIDTH_MODULATION = 16,
+		CTRL_SUB_OSCILLATOR = 17,
+		CTRL_TIMBRE = 18,
+		NUM_CONTROLLERS = 19,
 		NUM_VOICES = 16;
 
 	private MoogFilter filter;
@@ -32,7 +34,9 @@ public class Liquinth implements Synthesizer {
 	private Voice[] voices = new Voice[ NUM_VOICES ];
 	private byte[] keyStatus = new byte[ 128 ];
 	private byte[] controllers = new byte[ NUM_CONTROLLERS ];
-	private int sampleRate, filterCutoff1, filterCutoff2;
+	private int[] reverbBuffer;
+	private int sampleRate, reverbIndex, reverbLength;
+	private int filterCutoff1, filterCutoff2;
 
 	public Liquinth( int samplingRate ) {
 		setSamplingRate( samplingRate );
@@ -46,6 +50,7 @@ public class Liquinth implements Synthesizer {
 			voices[ idx ] = new Voice( sampleRate );
 			voices[ idx ].keyOn( idx );
 		}
+		reverbBuffer = new int[ samplingRate ];
 		allNotesOff( true );
 		for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
 			setController( ctlIdx, getController( ctlIdx ) );
@@ -65,8 +70,10 @@ public class Liquinth implements Synthesizer {
 		String name = "";
 		switch( controller ) {
 			case CTRL_OVERDRIVE: name = "Overdrive"; break;
+			case CTRL_REVERB_TIME: name = "Reverb Time"; break;
 			case CTRL_FILTER_CUTOFF: name = "Filter Cutoff"; break;
 			case CTRL_FILTER_RESONANCE: name = "Filter Resonance"; break;
+			case CTRL_FILTER_DETUNE: name = "Filter Detune"; break;
 			case CTRL_FILTER_ATTACK: name = "Filter Attack"; break;
 			case CTRL_FILTER_SUSTAIN: name = "Filter Sustain Level"; break;
 			case CTRL_FILTER_DECAY: name = "Filter Decay"; break;
@@ -74,7 +81,7 @@ public class Liquinth implements Synthesizer {
 			case CTRL_WAVEFORM: name = "Waveform"; break;
 			case CTRL_VOLUME_ATTACK: name = "Volume Attack"; break;
 			case CTRL_VOLUME_RELEASE: name = "Volume Release"; break;
-			case CTRL_OSCILLATOR_DETUNE: name = "Detune"; break;
+			case CTRL_OSCILLATOR_DETUNE: name = "Oscillator Detune"; break;
 			case CTRL_VIBRATO_SPEED: name = "Vibrato Speed"; break;
 			case CTRL_VIBRATO_DEPTH: name = "Vibrato Depth"; break;
 			case CTRL_PULSE_WIDTH: name = "Pulse Width"; break;
@@ -114,6 +121,10 @@ public class Liquinth implements Synthesizer {
 			cutoff = Maths.exp2( cutoff << 3 ) >> 8;
 			filter.setCutoff( cutoff / ( float ) Maths.FP_ONE );
 			filter.filter( outBuf, offset, count );
+			/* Apply reverb.*/
+			if( reverbLength > 0 ) {
+				reverb( outBuf, offset, count );
+			}
 			offset += count;
 		}
 	}
@@ -224,11 +235,24 @@ public class Liquinth implements Synthesizer {
 							voices[ idx ].setVolume( value );
 						}
 						break;
+					case CTRL_REVERB_TIME:
+						int len = ( sampleRate * value ) >> 7;
+						for( int idx = reverbLength; idx < len; idx++ ) {
+							reverbBuffer[ idx ] = 0;
+						}
+						if( reverbIndex > len ) {
+							reverbIndex = 0;
+						}
+						reverbLength = len;
+						break;
 					case CTRL_FILTER_CUTOFF:
 						filterCutoff2 = ( value + 1 ) << ( Maths.FP_SHIFT - 7 );
 						break;
 					case CTRL_FILTER_RESONANCE:
 						filter.setResonance( value * 0.0314f );
+						break;
+					case CTRL_FILTER_DETUNE:
+						filter.setDetune( value * 0.0078f );
 						break;
 					case CTRL_FILTER_ATTACK:
 						filterEnv.setAttackTime( ( value * value ) >> 2 );
@@ -363,6 +387,18 @@ public class Liquinth implements Synthesizer {
 		}
 		for( int idx = 0; idx < 128; idx++ ) {
 			keyStatus[ idx ] = 0;
+		}
+	}
+
+	private void reverb( int[] mixBuf, int mixIdx, int count ) {
+		/* Simple delay with feedback. */
+		int mixEnd = mixIdx + count;
+		while( mixIdx < mixEnd ) {
+			mixBuf[ mixIdx ] = ( mixBuf[ mixIdx ] * 3 + reverbBuffer[ reverbIndex ] ) >> 2;
+			reverbBuffer[ reverbIndex++ ] = mixBuf[ mixIdx++ ];
+			if( reverbIndex >= reverbLength ) {
+				reverbIndex = 0;
+			}
 		}
 	}
 }

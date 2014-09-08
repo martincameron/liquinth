@@ -5,25 +5,17 @@ package jvst.examples.liquinth;
 	Moog Filter (Variation 2) from http://www.musicdsp.org
 	Type : 24db resonant lowpass
 	References : Stilson/Smith CCRMA paper., Timo Tossavainen (?) version
-
 	I have no idea how this works :/
-	
-	cutoffs for resonant peaks (48khz):
-	  55 = 0.006286621
-	 110 = 0.012573242
-	 220 = 0.02407837
-	 440 = 0.048187256
-	 880 = 0.092285156
-	1660 = 0.17675781
-	3320 = 0.32418823
 */
 public class MoogFilter {
 	private static final float SCALE = 1f / 32768f;
-	
+
 	private float fc24khz;
-	private float cutoff, cutoffDest, resonance;
-	private float i1, i2, i3, i4;
-	private float o1, o2, o3, o4;
+	private float cutoff, cutoffDest, resonance, detune;
+	private float ia1, ia2, ia3, ia4;
+	private float ib1, ib2, ib3, ib4;
+	private float oa1, oa2, oa3, oa4;
+	private float ob1, ob2, ob3, ob4;
 
 	public MoogFilter( float samplingRate ) {
 		fc24khz = 48000f / samplingRate;
@@ -42,33 +34,57 @@ public class MoogFilter {
 		resonance = res;
 	}
 
+	public void setDetune( float det ) {
+		if( det < 0f ) det = 0f;
+		if( det > 1f ) det = 1f;
+		detune = 1f - det;
+	}
+
 	public void filter( int[] buf, int offset, int length ) {
 		float cutoffDelta, in, out, f1, f2, f4, fb, fk;
 		cutoffDelta = ( cutoffDest - cutoff ) / length;
 		int end = offset + length;
 		while( offset < end ) {
-			in = buf[ offset ] * SCALE;
 			cutoff += cutoffDelta;
+			/* Filter 1.*/
 			f1 = cutoff * 1.16f;
 			f2 = f1 * f1;
 			f4 = f2 * f2;
 			fb = resonance * ( 1f - 0.15f * f2 );
 			fk = 1f - f1;
-			in = in - o4 * fb;
+			in = buf[ offset ] * SCALE - oa4 * fb;
 			in = in * 0.35013f * f4;
-			o1 = in + 0.3f * i1 + fk * o1;
-			i1 = in;
-			o2 = o1 + 0.3f * i2 + fk * o2;
-			i2 = o1;
-			o3 = o2 + 0.3f * i3 + fk * o3;
-			i3 = o2;
-			o4 = o3 + 0.3f * i4 + fk * o4;
-			i4 = o3;
-			/* Clamp the feedback. */
-			if( o4 > 1f ) o4 = 1f;
-			if( o4 < -1f ) o4 = -1f;
+			oa1 = in + 0.3f * ia1 + fk * oa1;
+			ia1 = in;
+			oa2 = oa1 + 0.3f * ia2 + fk * oa2;
+			ia2 = oa1;
+			oa3 = oa2 + 0.3f * ia3 + fk * oa3;
+			ia3 = oa2;
+			oa4 = oa3 + 0.3f * ia4 + fk * oa4;
+			ia4 = oa3;
+			if( oa4 > 1f ) oa4 = 1f;
+			if( oa4 < -1f ) oa4 = -1f;
+			/* Filter 2.*/
+			f1 = cutoff * detune * 1.16f;
+			f2 = f1 * f1;
+			f4 = f2 * f2;
+			fb = resonance * ( 1f - 0.15f * f2 );
+			fk = 1f - f1;
+			in = buf[ offset ] * SCALE - ob4 * fb;
+			in = in * 0.35013f * f4;
+			ob1 = in + 0.3f * ib1 + fk * ob1;
+			ib1 = in;
+			ob2 = ob1 + 0.3f * ib2 + fk * ob2;
+			ib2 = ob1;
+			ob3 = ob2 + 0.3f * ib3 + fk * ob3;
+			ib3 = ob2;
+			ob4 = ob3 + 0.3f * ib4 + fk * ob4;
+			ib4 = ob3;
+			if( ob4 > 1f ) ob4 = 1f;
+			if( ob4 < -1f ) ob4 = -1f;
 			/* Waveshaping. */
-			out = 1.5f * o4 - 0.5f * o4 * o4 * o4;
+			out = ( oa4 + ob4 ) * 0.5f;
+			out = 1.5f * out - 0.5f * out * out * out;
 			buf[ offset++ ] = ( int ) ( out * 32767f );
 		}
 	}
