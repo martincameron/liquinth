@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140908;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn53";
+	public static final int REVISION = 42, RELEASE_DATE = 20140909;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn54";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
@@ -15,28 +15,30 @@ public class Liquinth implements Synthesizer {
 		CTRL_FILTER_ATTACK = 5,
 		CTRL_FILTER_SUSTAIN = 6,
 		CTRL_FILTER_DECAY = 7,
-		CTRL_PORTAMENTO = 8,
-		CTRL_WAVEFORM = 9,
-		CTRL_VOLUME_ATTACK = 10,
-		CTRL_VOLUME_RELEASE = 11,
-		CTRL_OSCILLATOR_DETUNE = 12,
-		CTRL_VIBRATO_SPEED = 13,
-		CTRL_VIBRATO_DEPTH = 14,
-		CTRL_PULSE_WIDTH = 15,
-		CTRL_PULSE_WIDTH_MODULATION = 16,
-		CTRL_SUB_OSCILLATOR = 17,
-		CTRL_TIMBRE = 18,
-		NUM_CONTROLLERS = 19,
+		CTRL_FILTER_MODULATION = 8,
+		CTRL_PORTAMENTO = 9,
+		CTRL_WAVEFORM = 10,
+		CTRL_VOLUME_ATTACK = 11,
+		CTRL_VOLUME_RELEASE = 12,
+		CTRL_OSCILLATOR_DETUNE = 13,
+		CTRL_VIBRATO_SPEED = 14,
+		CTRL_VIBRATO_DEPTH = 15,
+		CTRL_PULSE_WIDTH = 16,
+		CTRL_PULSE_WIDTH_MODULATION = 17,
+		CTRL_SUB_OSCILLATOR = 18,
+		CTRL_TIMBRE = 19,
+		NUM_CONTROLLERS = 20,
 		NUM_VOICES = 16;
 
 	private MoogFilter filter;
 	private Envelope filterEnv;
+	private LFO filterLFO;
 	private Voice[] voices = new Voice[ NUM_VOICES ];
 	private byte[] keyStatus = new byte[ 128 ];
 	private byte[] controllers = new byte[ NUM_CONTROLLERS ];
 	private int[] reverbBuffer;
 	private int sampleRate, reverbIndex, reverbLength;
-	private int filterCutoff1, filterCutoff2;
+	private int filterCutoff1, filterCutoff2, filterModulation;
 
 	public Liquinth( int samplingRate ) {
 		setSamplingRate( samplingRate );
@@ -46,6 +48,7 @@ public class Liquinth implements Synthesizer {
 		sampleRate = samplingRate;
 		filter = new MoogFilter( sampleRate );
 		filterEnv = new Envelope( sampleRate );
+		filterLFO = new LFO( sampleRate );
 		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 			voices[ idx ] = new Voice( sampleRate );
 			voices[ idx ].keyOn( idx );
@@ -77,6 +80,7 @@ public class Liquinth implements Synthesizer {
 			case CTRL_FILTER_ATTACK: name = "Filter Attack"; break;
 			case CTRL_FILTER_SUSTAIN: name = "Filter Sustain Level"; break;
 			case CTRL_FILTER_DECAY: name = "Filter Decay"; break;
+			case CTRL_FILTER_MODULATION: name = "Filter Modulation"; break;
 			case CTRL_PORTAMENTO: name = "Portamento Speed"; break;
 			case CTRL_WAVEFORM: name = "Waveform"; break;
 			case CTRL_VOLUME_ATTACK: name = "Volume Attack"; break;
@@ -112,9 +116,14 @@ public class Liquinth implements Synthesizer {
 			}
 			/* Handle filter envelope.*/
 			filterEnv.update( count );
+			filterLFO.update( count );
 			filterCutoff1 += ( ( filterCutoffRate * count ) >> Maths.FP_SHIFT );
 			int alevel = controllers[ CTRL_FILTER_SUSTAIN ] << ( Maths.FP_SHIFT - 7 );
 			int cutoff = filterCutoff1 + ( ( filterEnv.getAmplitude() * alevel ) >> Maths.FP_SHIFT );
+			cutoff += ( filterLFO.getAmplitude() * filterModulation ) >> ( Maths.FP_SHIFT + 1 );
+			if( cutoff < 0 ) {
+				cutoff = 0;
+			}
 			if( cutoff > Maths.FP_ONE ) {
 				cutoff = Maths.FP_ONE;
 			}
@@ -260,6 +269,9 @@ public class Liquinth implements Synthesizer {
 					case CTRL_FILTER_DECAY:
 						filterEnv.setReleaseTime( ( value * value ) >> 2 );
 						break;
+					case CTRL_FILTER_MODULATION:
+						filterModulation = value << ( Maths.FP_SHIFT - 7 );
+						break;
 					case CTRL_PORTAMENTO:
 						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setPortamentoTime( ( value * value ) >> 4 );
@@ -296,6 +308,7 @@ public class Liquinth implements Synthesizer {
 						for( int idx = 0; idx < NUM_VOICES; idx++ ) {
 							voices[ idx ].setLFOSpeed( value );
 						}
+						filterLFO.setCycleLen( value );
 						break;
 					case CTRL_VIBRATO_DEPTH:
 						if( value > 0 ) {
