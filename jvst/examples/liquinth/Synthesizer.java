@@ -2,6 +2,7 @@
 package jvst.examples.liquinth;
 
 public interface Synthesizer {
+	public int getSamplingRate();
 	public int setSamplingRate( int samplingRate );
 	public char getVersion();
 	public void noteOn( int key, int velocity );
