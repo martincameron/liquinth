@@ -132,7 +132,7 @@ public class Voice {
 		lfo.update( length );
 		int vibrato = ( lfo.getAmplitude() * vibratoDepth ) >> Maths.FP_SHIFT;
 		osc1.setPitch( pitch + pitchWheel + vibrato );
-		osc2.setPitch( pitch + pitchWheel + detune );
+		osc2.setPitch( pitch + pitchWheel + ( detune > 0 ? detune - vibrato : vibrato ) );
 		volEnv.update( length );
 		int pwm = pulseWidth + ( ( lfo.getAmplitude() * pwmDepth ) >> Maths.FP_SHIFT );
 		osc1.setPulseWidth( pwm );

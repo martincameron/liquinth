@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140909;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn54";
+	public static final int REVISION = 42, RELEASE_DATE = 20140914;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn55";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
@@ -44,7 +44,11 @@ public class Liquinth implements Synthesizer {
 		setSamplingRate( samplingRate );
 	}
 	
-	public int setSamplingRate( int samplingRate ) {
+	public int getSamplingRate() {
+		return sampleRate;
+	}
+
+	public synchronized int setSamplingRate( int samplingRate ) {
 		sampleRate = samplingRate;
 		filter = new MoogFilter( sampleRate );
 		filterEnv = new Envelope( sampleRate );
@@ -400,6 +404,11 @@ public class Liquinth implements Synthesizer {
 		}
 		for( int idx = 0; idx < 128; idx++ ) {
 			keyStatus[ idx ] = 0;
+		}
+		if( soundOff ) {
+			for( int idx = 0; idx < reverbBuffer.length; idx++ ) {
+				reverbBuffer[ idx ] = 0;
+			}
 		}
 	}
 
