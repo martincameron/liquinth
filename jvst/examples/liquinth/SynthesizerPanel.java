@@ -27,6 +27,7 @@ import javax.swing.event.ChangeListener;
 public class SynthesizerPanel extends JPanel implements Synthesizer {
 	private Synthesizer synthesizer;
 	private JSlider[] controllers;
+	private ControllerListener[] controllerListeners;
 	private JRadioButton[] modulationAssign;
 	private int modulationControlIdx;
 
@@ -40,10 +41,12 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		gbc.insets = new Insets( 2, 2, 2, 2 );
 		int numControllers = synth.getNumControllers();
 		controllers = new JSlider[ numControllers ];
+		controllerListeners = new ControllerListener[ numControllers ];
 		modulationAssign = new JRadioButton[ numControllers ];
 		ButtonGroup buttonGroup = new ButtonGroup();
 		for( int idx = 0; idx < numControllers; idx++ ) {
 			ControllerListener controllerListener = new ControllerListener( idx );
+			controllerListeners[ idx ] = controllerListener;
 			gbc.weightx = 0;
 			gbc.fill = GridBagConstraints.HORIZONTAL;
 			gbc.gridwidth = 1;
@@ -105,11 +108,8 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		
 	public synchronized void setController( final int controller, final int value ) {
 		if( controller >= 0 && controller < controllers.length ) {
-			SwingUtilities.invokeLater( new Runnable() {
-				public void run() {
-					controllers[ controller ].setValue( value );
-				}
-			} );
+			synthesizer.setController( controller, value );
+			SwingUtilities.invokeLater( controllerListeners[ controller ] );
 		}
 	}
 
@@ -204,10 +204,16 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		output.write( '\n' );
 	}
 
-	public synchronized void saveWave( java.io.OutputStream outputStream, int key, int sustain, int release ) throws java.io.IOException {
+	public synchronized void saveWave( java.io.OutputStream outputStream, int[] keys, int sustain, int release ) throws java.io.IOException {
 		int sampleRate = synthesizer.getSamplingRate();
 		int tickLen = sampleRate >> 10;
+		if( sustain < 1 ) {
+			sustain = 1;
+		}
 		int ticks = sustain + release;
+		if( ticks < 1 ) {
+			ticks = 1;
+		}
 		writeChars( outputStream, "RIFF".toCharArray(), 4 );
 		writeInt( outputStream, tickLen * ticks * 2 + 36 ); // Wave chunk length.
 		writeChars( outputStream, "WAVE".toCharArray(), 4 );
@@ -224,10 +230,18 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		int[] inputBuf = new int[ tickLen ];
 		byte[] outputBuf = new byte[ tickLen * 2 ];
 		synthesizer.allNotesOff( true );
-		synthesizer.noteOn( key, 127 );
+		for( int key : keys ) {
+			if( key > 0 ) {
+				synthesizer.noteOn( key, 127 );
+			}
+		}
 		for( int tick = 0; tick < ticks; tick++ ) {
 			if( tick == sustain ) {
-				synthesizer.noteOff( key );
+				for( int key : keys ) {
+					if( key > 0 ) {
+						synthesizer.noteOff( key );
+					}
+				}
 			}
 			synthesizer.getAudio( inputBuf, tickLen );
 			for( int outputIdx = 0; outputIdx < outputBuf.length; outputIdx += 2 ) {
@@ -256,7 +270,7 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		}
 	}
 
-	private class ControllerListener implements ChangeListener, ActionListener {
+	private class ControllerListener implements ChangeListener, ActionListener, Runnable {
 		private int ctrlIdx;
 
 		public ControllerListener( int controlIdx ) {
@@ -264,11 +278,15 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		}
 
 		public void stateChanged( ChangeEvent e ) {
-			synthesizer.setController( ctrlIdx, controllers[ ctrlIdx ].getValue() );
+			setController( ctrlIdx, controllers[ ctrlIdx ].getValue() );
 		}
 		
 		public void actionPerformed( ActionEvent e ) {
 			modulationControlIdx = ctrlIdx;
-		}	
+		}
+
+		public void run() {
+			controllers[ ctrlIdx ].setValue( synthesizer.getController( ctrlIdx ) );
+		}
 	}
 }

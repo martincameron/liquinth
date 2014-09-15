@@ -3,8 +3,12 @@ package jvst.examples.liquinth;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -15,8 +19,10 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.swing.ButtonGroup;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -24,6 +30,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JSeparator;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
@@ -36,6 +43,7 @@ public class LiquinthJS extends JFrame {
 	private Player player;
 	private Thread playThread;
 	private JFileChooser loadPatchFileChooser, savePatchFileChooser, saveWaveFileChooser;
+	private SaveWaveFileChooserAccessory saveWaveFileChooserAccessory;
 	
 	public LiquinthJS() {
 		Liquinth liquinth = new Liquinth( Player.SAMPLING_RATE * Player.OVERSAMPLE );
@@ -64,6 +72,8 @@ public class LiquinthJS extends JFrame {
 		saveWaveFileChooser = new JFileChooser();
 		saveWaveFileChooser.setFileFilter( new FileNameExtensionFilter(
 			"Wave files", "wav" ) );
+		saveWaveFileChooserAccessory = new SaveWaveFileChooserAccessory();
+		saveWaveFileChooser.setAccessory( saveWaveFileChooserAccessory );
 		saveWaveMenuItem.addActionListener( new SaveWaveMenuItemListener() );
 		fileMenu.add( saveWaveMenuItem );
 		/* Add quit menu item. */
@@ -207,6 +217,8 @@ public class LiquinthJS extends JFrame {
 
 	private class SaveWaveMenuItemListener implements ActionListener {
 		public void actionPerformed( ActionEvent event ) {
+			saveWaveFileChooserAccessory.setSustainTime( synthesizerPanel.getController( synthesizerPanel.getAttackControlIdx() ) << 5 );
+			saveWaveFileChooserAccessory.setDecayTime( 4096 );
 			int result = saveWaveFileChooser.showSaveDialog( LiquinthJS.this );
 			if( result == JFileChooser.APPROVE_OPTION ) {
 				try {
@@ -219,7 +231,10 @@ public class LiquinthJS extends JFrame {
 					}
 					FileOutputStream outputStream = new FileOutputStream( file );
 					try {
-						synthesizerPanel.saveWave( outputStream, 60, 1024, 4096 );
+						int[] keys = saveWaveFileChooserAccessory.getKeys();
+						int sustain = saveWaveFileChooserAccessory.getSustainTime();
+						int decay = saveWaveFileChooserAccessory.getDecayTime();
+						synthesizerPanel.saveWave( outputStream, keys, sustain, decay );
 					} finally {
 						outputStream.close();
 					}
@@ -228,6 +243,112 @@ public class LiquinthJS extends JFrame {
 						exception.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
 				}
 			}
+		}
+	}
+
+	private class SaveWaveFileChooserAccessory extends JPanel {
+		private JComboBox keyCombo1, keyCombo2, keyCombo3;
+		private JTextField sustainField, decayField;
+		private int sustainTime, decayTime;
+
+		public SaveWaveFileChooserAccessory() {
+			setLayout( new GridBagLayout() );
+			GridBagConstraints labelConstraints = new GridBagConstraints();
+			labelConstraints.insets = new Insets( 2, 2, 2, 2 );
+			labelConstraints.gridwidth = 1;
+			GridBagConstraints comboConstraints = new GridBagConstraints();
+			comboConstraints.insets = labelConstraints.insets;
+			comboConstraints.gridwidth = GridBagConstraints.REMAINDER;
+			comboConstraints.fill = GridBagConstraints.HORIZONTAL;
+			String[] keys = new String[ 128 ];
+			keys[ 0 ] = "None";
+			String keyToString = "A-A#B-C-C#D-D#E-F-F#G-G#";
+			for( int key = 1; key < 128; key++ ) {
+				int oct = ( key + 3 ) / 12;
+				int note = ( key + 3 ) % 12;
+				keys[ key ] = key + " " + keyToString.substring( note * 2, note * 2 + 2 ) + oct;
+			}
+			add( new JLabel( "Key 1" ), labelConstraints );
+			keyCombo1 = new JComboBox<String>( keys );
+			keyCombo1.setSelectedIndex( 60 );
+			add( keyCombo1, comboConstraints );
+			add( new JLabel( "Key 2" ), labelConstraints );
+			keyCombo2 = new JComboBox<String>( keys );
+			add( keyCombo2, comboConstraints );
+			add( new JLabel( "Key 3" ), labelConstraints );
+			keyCombo3 = new JComboBox<String>( keys );
+			add( keyCombo3, comboConstraints );
+			ActionListener timeFieldActionListener = new ActionListener() {
+				public void actionPerformed( ActionEvent actionEvent ) {
+					KeyboardFocusManager.getCurrentKeyboardFocusManager().focusNextComponent();
+				}
+			};
+			add( new JLabel( "Sustain Time (ms)" ), labelConstraints );
+			sustainField = new JTextField( "1", 5 );
+			sustainField.addActionListener( timeFieldActionListener );
+			sustainField.addFocusListener( new FocusListener() {
+				public void focusGained( FocusEvent focusEvent ) {}
+				public void focusLost( FocusEvent focusEvent ) {
+					try {
+						setSustainTime( Integer.parseInt( sustainField.getText() ) );
+					} catch( Exception exception ) {
+						setSustainTime( synthesizerPanel.getController( synthesizerPanel.getAttackControlIdx() ) << 5 );
+					}
+				}
+			} );
+			add( sustainField, comboConstraints );
+			add( new JLabel( "Decay Time (ms)" ), labelConstraints );
+			decayField = new JTextField( "1", 5 );
+			decayField.addActionListener( timeFieldActionListener );
+			decayField.addFocusListener( new FocusListener() {
+				public void focusGained( FocusEvent focusEvent ) {}
+				public void focusLost( FocusEvent focusEvent ) {
+					try {
+						setDecayTime( Integer.parseInt( decayField.getText() ) );
+					} catch( Exception exception ) {
+						setDecayTime( 4096 );
+					}
+				}
+			} );
+			add( decayField, comboConstraints );
+		}
+
+		public int[] getKeys() {
+			int[] keys = new int[ 3 ];
+			keys[ 0 ] = keyCombo1.getSelectedIndex();
+			keys[ 1 ] = keyCombo2.getSelectedIndex();
+			keys[ 2 ] = keyCombo3.getSelectedIndex();
+			return keys;
+		}
+
+		public int getSustainTime() {
+			return sustainTime;
+		}
+
+		public void setSustainTime( int time ) {
+			if( time < 1 ) {
+				time = 1;
+			}
+			if( time > 65536 ) {
+				time = 65536;
+			}
+			sustainTime = time;
+			sustainField.setText( String.valueOf( time ) );
+		}
+
+		public int getDecayTime() {
+			return decayTime;
+		}
+
+		public void setDecayTime( int time ) {
+			if( time < 1 ) {
+				time = 1;
+			}
+			if( time > 65536 ) {
+				time = 65536;
+			}
+			decayTime = time;
+			decayField.setText( String.valueOf( time ) );
 		}
 	}
 
