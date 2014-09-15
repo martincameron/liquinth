@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140914;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn55";
+	public static final int REVISION = 42, RELEASE_DATE = 20140915;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn56";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
