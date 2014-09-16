@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140915;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn56";
+	public static final int REVISION = 42, RELEASE_DATE = 20140916;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn57";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
@@ -265,7 +265,10 @@ public class Liquinth implements Synthesizer {
 						filter.setResonance( value * 0.0314f );
 						break;
 					case CTRL_FILTER_DETUNE:
-						filter.setDetune( value * 0.0078f );
+						if( value > 0 ) {
+							value = Maths.log2( value << Maths.FP_SHIFT ) >> 3;
+						}
+						filter.setDetune( value * 0.0000305f );
 						break;
 					case CTRL_FILTER_ATTACK:
 						filterEnv.setAttackTime( ( value * value ) >> 2 );
