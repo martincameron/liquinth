@@ -28,6 +28,10 @@ public class LFO {
 		return Maths.sine( phase );
 	}
 
+	public int getAmplitude3() {
+		return Maths.sine( phase * 3 );
+	}
+
 	public void update( int length ) {
 		phase += Maths.FP_TWO * length / cycleLen;
 		phase &= Maths.FP_TWO - 1;
