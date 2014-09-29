@@ -10,6 +10,8 @@ public interface Synthesizer {
 	public void allNotesOff( boolean soundOff );
 	public int getNumControllers();
 	public String getControllerName( int controlIdx );
+	public String getControllerKey( int controller );
+	public int getControllerIdx( String key );
 	public int getController( int controlIdx );
 	public void setController( int controlIdx, int value );
 	public void resetAllControllers();

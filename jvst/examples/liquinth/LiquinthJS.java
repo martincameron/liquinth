@@ -266,7 +266,7 @@ public class LiquinthJS extends JFrame {
 			for( int key = 1; key < 128; key++ ) {
 				int oct = ( key + 3 ) / 12;
 				int note = ( key + 3 ) % 12;
-				keys[ key ] = key + " " + keyToString.substring( note * 2, note * 2 + 2 ) + oct;
+				keys[ key ] = keyToString.substring( note * 2, note * 2 + 2 ) + oct;
 			}
 			add( new JLabel( "Key 1" ), labelConstraints );
 			keyCombo1 = new JComboBox<String>( keys );

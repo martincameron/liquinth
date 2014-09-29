@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20140924;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn58";
+	public static final int REVISION = 42, RELEASE_DATE = 20140929;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn59";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
@@ -29,6 +29,29 @@ public class Liquinth implements Synthesizer {
 		CTRL_TIMBRE = 19,
 		NUM_CONTROLLERS = 20,
 		NUM_VOICES = 16;
+
+	private static final String[] controllerKeys = {
+		"od:Overdrive",
+		"rv:Reverb Time",
+		"fc:Filter Cutoff",
+		"fq:Filter Resonance",
+		"ft:Filter Detune",
+		"fa:Filter Attack",
+		"fs:Filter Sustain Level",
+		"fd:Filter Decay",
+		"fm:Filter Modulation",
+		"ps:Portamento Speed",
+		"wf:Waveform",
+		"aa:Volume Attack",
+		"ar:Volume Release",
+		"dt:Oscillator Detune",
+		"vs:Vibrato Speed",
+		"vd:Vibrato Depth",
+		"pw:Pulse Width",
+		"pm:Pulse Width Modulation",
+		"so:Sub Oscillator Level",
+		"tm:Timbre"
+	};
 
 	private MoogFilter filter;
 	private Envelope filterEnv;
@@ -75,29 +98,27 @@ public class Liquinth implements Synthesizer {
 
 	public String getControllerName( int controller ) {
 		String name = "";
-		switch( controller ) {
-			case CTRL_OVERDRIVE: name = "Overdrive"; break;
-			case CTRL_REVERB_TIME: name = "Reverb Time"; break;
-			case CTRL_FILTER_CUTOFF: name = "Filter Cutoff"; break;
-			case CTRL_FILTER_RESONANCE: name = "Filter Resonance"; break;
-			case CTRL_FILTER_DETUNE: name = "Filter Detune"; break;
-			case CTRL_FILTER_ATTACK: name = "Filter Attack"; break;
-			case CTRL_FILTER_SUSTAIN: name = "Filter Sustain Level"; break;
-			case CTRL_FILTER_DECAY: name = "Filter Decay"; break;
-			case CTRL_FILTER_MODULATION: name = "Filter Modulation"; break;
-			case CTRL_PORTAMENTO: name = "Portamento Speed"; break;
-			case CTRL_WAVEFORM: name = "Waveform"; break;
-			case CTRL_VOLUME_ATTACK: name = "Volume Attack"; break;
-			case CTRL_VOLUME_RELEASE: name = "Volume Release"; break;
-			case CTRL_OSCILLATOR_DETUNE: name = "Oscillator Detune"; break;
-			case CTRL_VIBRATO_SPEED: name = "Vibrato Speed"; break;
-			case CTRL_VIBRATO_DEPTH: name = "Vibrato Depth"; break;
-			case CTRL_PULSE_WIDTH: name = "Pulse Width"; break;
-			case CTRL_PULSE_WIDTH_MODULATION: name = "Pulse Width Modulation"; break;
-			case CTRL_SUB_OSCILLATOR: name = "Sub Oscillator Level"; break;
-			case CTRL_TIMBRE: name = "Timbre"; break;
+		if( controller >= 0 && controller < controllerKeys.length ) {
+			name = controllerKeys[ controller ].substring( 3 );
 		}
 		return name;
+	}
+
+	public String getControllerKey( int controller ) {
+		String key = "";
+		if( controller >= 0 && controller < controllerKeys.length ) {
+			key = controllerKeys[ controller ].substring( 0, 2 );
+		}
+		return key;
+	}
+
+	public int getControllerIdx( String key ) {
+		for( int idx = 0; idx < controllerKeys.length; idx++ ) {
+			if( controllerKeys[ idx ].startsWith( key ) ) {
+				return idx;
+			}
+		}
+		return -1;
 	}
 
 	public synchronized void getAudio( int[] outBuf, int length ) {
