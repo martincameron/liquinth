@@ -101,7 +101,15 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 	public String getControllerName( int control ) {
 		return synthesizer.getControllerName( control );
 	}
-	
+
+	public String getControllerKey( int control ) {
+		return synthesizer.getControllerKey( control );
+	}
+
+	public int getControllerIdx( String key ) {
+		return synthesizer.getControllerIdx( key );
+	}
+
 	public synchronized int getController( int controller ) {
 		return synthesizer.getController( controller );
 	}
