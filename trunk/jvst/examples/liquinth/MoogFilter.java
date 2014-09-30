@@ -41,7 +41,7 @@ public class MoogFilter {
 	}
 
 	public void filter( int[] buf, int offset, int length ) {
-		float cutoffDelta, in, out, f1, f2, f4, fb, fk;
+		float cutoffDelta, in, out1, out2, f1, f2, f4, fb, fk;
 		cutoffDelta = ( cutoffDest - cutoff ) / length;
 		int end = offset + length;
 		while( offset < end ) {
@@ -65,7 +65,7 @@ public class MoogFilter {
 			if( oa4 > 1f ) oa4 = 1f;
 			if( oa4 < -1f ) oa4 = -1f;
 			/* Filter 2.*/
-			f1 = cutoff * detune * 1.16f;
+			f1 = f1 * detune;
 			f2 = f1 * f1;
 			f4 = f2 * f2;
 			fb = resonance * ( 1f - 0.15f * f2 );
@@ -83,9 +83,9 @@ public class MoogFilter {
 			if( ob4 > 1f ) ob4 = 1f;
 			if( ob4 < -1f ) ob4 = -1f;
 			/* Waveshaping. */
-			out = ( oa4 + ob4 ) * 0.5f;
-			out = 1.5f * out - 0.5f * out * out * out;
-			buf[ offset++ ] = ( int ) ( out * 32767f );
+			out1 = 1.5f * oa4 - 0.5f * oa4 * oa4 * oa4;
+			out2 = 1.5f * ob4 - 0.5f * ob4 * ob4 * ob4;
+			buf[ offset++ ] = ( int ) ( ( out1 + out2 ) * 16383f );
 		}
 	}
 }
