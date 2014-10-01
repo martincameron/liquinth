@@ -4,7 +4,8 @@ package jvst.examples.liquinth;
 public interface Synthesizer {
 	public int getSamplingRate();
 	public int setSamplingRate( int samplingRate );
-	public char getVersion();
+	public String getVersion();
+	public int getRevision();
 	public void noteOn( int key, int velocity );
 	public void noteOff( int key );
 	public void allNotesOff( boolean soundOff );

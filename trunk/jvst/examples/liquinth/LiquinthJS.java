@@ -177,7 +177,8 @@ public class LiquinthJS extends JFrame {
 					File file = loadPatchFileChooser.getSelectedFile();
 					FileInputStream inputStream = new FileInputStream( file );
 					try {
-						synthesizerPanel.loadPatch( inputStream );
+						synthesizerPanel.resetAllControllers();
+						synthesizerPanel.runSequence( inputStream, null, 0 );
 					} finally {
 						inputStream.close();
 					}
@@ -187,7 +188,7 @@ public class LiquinthJS extends JFrame {
 				}
 			}
 		}
-	} 
+	}
 
 	private class SavePatchMenuItemListener implements ActionListener {
 		public void actionPerformed( ActionEvent event ) {
@@ -234,7 +235,16 @@ public class LiquinthJS extends JFrame {
 						int[] keys = saveWaveFileChooserAccessory.getKeys();
 						int sustain = saveWaveFileChooserAccessory.getSustainTime();
 						int decay = saveWaveFileChooserAccessory.getDecayTime();
-						synthesizerPanel.saveWave( outputStream, keys, sustain, decay );
+						String sequence = "";
+						for( int key : keys ) {
+							if( key > 0 ) sequence += " :" + SynthesizerPanel.keyToNote( key );
+						}
+						sequence += " +" + ( sustain > 1 ? sustain : 1 );
+						for( int key : keys ) {
+							if( key > 0 ) sequence += " /" + SynthesizerPanel.keyToNote( key );
+						}
+						sequence += " +" + ( decay > 1 ? decay : 1 );
+						synthesizerPanel.saveWave( sequence, outputStream, synthesizerPanel.getSamplingRate() / 1000 );
 					} finally {
 						outputStream.close();
 					}
@@ -262,11 +272,8 @@ public class LiquinthJS extends JFrame {
 			comboConstraints.fill = GridBagConstraints.HORIZONTAL;
 			String[] keys = new String[ 128 ];
 			keys[ 0 ] = "None";
-			String keyToString = "A-A#B-C-C#D-D#E-F-F#G-G#";
-			for( int key = 1; key < 128; key++ ) {
-				int oct = ( key + 3 ) / 12;
-				int note = ( key + 3 ) % 12;
-				keys[ key ] = keyToString.substring( note * 2, note * 2 + 2 ) + oct;
+			for( int key = 1; key < 117; key++ ) {
+				keys[ key ] = SynthesizerPanel.keyToNote( key );
 			}
 			add( new JLabel( "Key 1" ), labelConstraints );
 			keyCombo1 = new JComboBox<String>( keys );
