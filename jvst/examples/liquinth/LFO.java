@@ -28,8 +28,8 @@ public class LFO {
 		return Maths.sine( phase );
 	}
 
-	public int getAmplitude3() {
-		return Maths.sine( phase * 3 );
+	public int getAmplitude2() {
+		return Maths.sine( phase * 2 );
 	}
 
 	public void update( int length ) {

@@ -177,8 +177,7 @@ public class LiquinthJS extends JFrame {
 					File file = loadPatchFileChooser.getSelectedFile();
 					FileInputStream inputStream = new FileInputStream( file );
 					try {
-						synthesizerPanel.resetAllControllers();
-						synthesizerPanel.runSequence( inputStream, null, 0 );
+						synthesizerPanel.loadPatch( inputStream );
 					} finally {
 						inputStream.close();
 					}
@@ -235,16 +234,7 @@ public class LiquinthJS extends JFrame {
 						int[] keys = saveWaveFileChooserAccessory.getKeys();
 						int sustain = saveWaveFileChooserAccessory.getSustainTime();
 						int decay = saveWaveFileChooserAccessory.getDecayTime();
-						String sequence = "";
-						for( int key : keys ) {
-							if( key > 0 ) sequence += " :" + SynthesizerPanel.keyToNote( key );
-						}
-						sequence += " +" + ( sustain > 1 ? sustain : 1 );
-						for( int key : keys ) {
-							if( key > 0 ) sequence += " /" + SynthesizerPanel.keyToNote( key );
-						}
-						sequence += " +" + ( decay > 1 ? decay : 1 );
-						synthesizerPanel.saveWave( sequence, outputStream, synthesizerPanel.getSamplingRate() / 1000 );
+						synthesizerPanel.saveWave( outputStream, keys, sustain, decay );
 					} finally {
 						outputStream.close();
 					}
@@ -273,7 +263,7 @@ public class LiquinthJS extends JFrame {
 			String[] keys = new String[ 128 ];
 			keys[ 0 ] = "None";
 			for( int key = 1; key < 117; key++ ) {
-				keys[ key ] = SynthesizerPanel.keyToNote( key );
+				keys[ key ] = Sequencer.keyToNote( key );
 			}
 			add( new JLabel( "Key 1" ), labelConstraints );
 			keyCombo1 = new JComboBox<String>( keys );
