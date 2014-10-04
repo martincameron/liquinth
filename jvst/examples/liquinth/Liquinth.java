@@ -2,8 +2,8 @@
 package jvst.examples.liquinth;
 
 public class Liquinth implements Synthesizer {
-	public static final int REVISION = 42, RELEASE_DATE = 20141003;
-	public static final String VERSION = "Liquinth a" + REVISION + "svn62";
+	public static final int REVISION = 42, RELEASE_DATE = 20141004;
+	public static final String VERSION = "Liquinth a" + REVISION + "svn63";
 	public static final String AUTHOR = "(c)2014 mumart@gmail.com";
 
 	private static final int
@@ -72,20 +72,22 @@ public class Liquinth implements Synthesizer {
 	}
 
 	public synchronized int setSamplingRate( int samplingRate ) {
-		sampleRate = samplingRate;
-		filter = new MoogFilter( sampleRate );
-		filterEnv = new Envelope( sampleRate );
-		filterLFO = new LFO( sampleRate );
-		for( int idx = 0; idx < NUM_VOICES; idx++ ) {
-			voices[ idx ] = new Voice( sampleRate );
-			voices[ idx ].keyOn( idx );
+		if( sampleRate != samplingRate ) {
+			sampleRate = samplingRate;
+			filter = new MoogFilter( sampleRate );
+			filterEnv = new Envelope( sampleRate );
+			filterLFO = new LFO( sampleRate );
+			for( int idx = 0; idx < NUM_VOICES; idx++ ) {
+				voices[ idx ] = new Voice( sampleRate );
+				voices[ idx ].keyOn( idx );
+			}
+			reverbBuffer = new int[ samplingRate ];
+			allNotesOff( true );
+			for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
+				setController( ctlIdx, getController( ctlIdx ) );
+			}
 		}
-		reverbBuffer = new int[ samplingRate ];
-		allNotesOff( true );
-		for( int ctlIdx = 0; ctlIdx < NUM_CONTROLLERS; ctlIdx++ ) {
-			setController( ctlIdx, getController( ctlIdx ) );
-		}
-		return samplingRate;
+		return sampleRate;
 	}
 
 	public String getVersion() {

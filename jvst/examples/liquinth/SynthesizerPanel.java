@@ -190,7 +190,6 @@ public class SynthesizerPanel extends JPanel implements Synthesizer {
 		sequencer.savePatch( outputStream );
 	}
 
-	/* Convert the input sequence to a wave file. */
 	public synchronized void saveWave( java.io.OutputStream outputStream, int[] keys, int sustain, int decay ) throws IOException {
 		String sequence = "";
 		for( int key : keys ) {
