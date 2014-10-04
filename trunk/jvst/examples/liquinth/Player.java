@@ -23,6 +23,7 @@ public class Player implements Runnable {
 
 	public Player( Synthesizer synth, Mixer mixer ) throws LineUnavailableException {
 		synthesizer = synth;
+		synthesizer.setSamplingRate( SAMPLING_RATE * OVERSAMPLE );
 		AudioFormat audioFormat = new AudioFormat( SAMPLING_RATE, 16, 1, true, false );
 		DataLine.Info lineInfo = new DataLine.Info( SourceDataLine.class, audioFormat, BUF_BYTES );
 		audioLine = ( SourceDataLine ) mixer.getLine( lineInfo );
