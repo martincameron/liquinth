@@ -3,7 +3,7 @@ package jvst.examples.liquinth;
 
 public class LiquinthJS {
 	public static void main( String[] args ) throws java.io.IOException {
-		Synthesizer synthesizer = new Liquinth( Player.SAMPLING_RATE * Player.OVERSAMPLE );
+		final Synthesizer synthesizer = new Liquinth( Player.SAMPLING_RATE * Player.OVERSAMPLE );
 		final String title = Liquinth.VERSION + " " + Liquinth.AUTHOR;
 		System.out.println( title );
 		if( args.length == 0 ) {
