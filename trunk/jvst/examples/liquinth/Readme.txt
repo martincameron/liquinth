@@ -13,31 +13,25 @@ Version a42 has been almost completely overhauled.
 The overall sound quality is vastly improved, with
 a much fatter-sounding pulse-width implementation, more
 responsive envelopes, a more natural amplitude curve,
-and more overdrive.
+more overdrive, and a delay effect.
+
 The filter envelope now has an attack phase. If this
 is set to zero the filter will release instantaneously
 as in previous versions.
-The pulse-width control now has a modulation depth,
-tied to the vibrato rate.
+
+There are now two filters which can be detuned to give
+two resonant peaks for a phaser-like effect.
+
+The filter and pulse-width controls now have a modulation
+depth, tied to the vibrato rate.
+
 There is now a sub-oscillator which generates a square
 wave one octave below the current frequency.
 
-Version a41 has a few code improvements,
-but there should be no changes to the performance.
-
-Version a40 brings a pulse-width control (a simple
-implementation that is only really useful for bass
-sounds) and a "timbre" setting to control the number of
-harmonics in the waveform (basically just exposing the
-workings of the antialiasing algorithm). A couple of
-minor bugs in the volume/pitch interpolation have been
-fixed and the code has been made a little clearer in
-places.
-
-There have been substantial improvements since version a30.
-The oscillators are now multisampled, resulting in a much
-cleaner sound with less processor time.
-The overdrive and vibrato are also considerably better.
+Patches can be saved and restored from the GUI, and also
+exported as WAV files containing a sustained note or chord.
+Patch files may also include more complex sequences which can
+be converted to WAV files using the command-line interface.
 
 Usage
 
@@ -59,6 +53,29 @@ is usually the default for the first modulation wheel.
 Some of the standard MIDI controllers are also mapped automatically,
 such as Attack, Release, and Filter Cutoff.
 
+To use the built-in sequencer it is necessary to hand-edit a patch
+file containing the notes to be played, such as the example below,
+and issue a command such as "java -jar liquinth.jar test.pat test.wav"
+to perform the conversion:
+
+(Example patch/sequence. Comments may be put in brackets.)
+	od32  (Set volume/overdrive.)
+	fc127 (Set filter cut-off.)
+	aa32  (Set Volume Attack.)
+	ar127 (Set Volume Release.)
+	dt2   (Set detune.)
+	:c-5  (Key on A-5.)
+	+500  (Wait 500ms.)
+	:e-5  (Key on B-5.)
+	+500  (Wait 500ms.)
+	:g-5  (Key on C-5.)
+	+500  (Wait 500ms.)
+	/c-5  (Key off A-5.)
+	/e-5  (Key off B-5.)
+	/g-5  (Key off C-5.)
+	+4000 (Wait 4s)
+(End.)
+
 Configuring jVSTwRapper
 
 When configuring Liquinth as a VST instrument, your jVSTwrapper
@@ -68,5 +85,5 @@ PluginClass=jvst/examples/liquinth/vst/LiquinthVST
 PluginUIClass=jvst/examples/liquinth/vst/LiquinthVSTGUI
 ClassPath={WrapperPath}\liquinth-a42.jar
 
-Kind Regards,
+Cheers!
 Martin
