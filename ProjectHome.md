@@ -1,0 +1,1 @@
+Liquinth is a simple but nice-sounding polyphonic music synthesizer that can be run either as a standalone Java application with MIDI or as a VST instrument (using jVSTwRapper).
