@@ -90,9 +90,13 @@ public class SynthesizerFrame extends JFrame {
 		/* Add audio device menu. */
 		JMenu audioDeviceMenu = new JMenu( "Audio Device" );
 		ButtonGroup audioDeviceButtonGroup = new ButtonGroup();
+		JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem( "Default" );
+		menuItem.addActionListener( new AudioDeviceMenuItemListener( null ) );
+		audioDeviceButtonGroup.add( menuItem );
+		audioDeviceMenu.add( menuItem );
 		Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
 		for( int idx = 0; idx < mixerInfo.length; idx++ ) {
-			JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem( mixerInfo[ idx ].toString() );
+			menuItem = new JRadioButtonMenuItem( mixerInfo[ idx ].toString() );
 			menuItem.addActionListener( new AudioDeviceMenuItemListener( mixerInfo[ idx ] ) );
 			audioDeviceButtonGroup.add( menuItem );
 			audioDeviceMenu.add( menuItem );
@@ -104,7 +108,7 @@ public class SynthesizerFrame extends JFrame {
 		JMenu midiDeviceMenu = new JMenu( "MIDI Input Device" );
 		ButtonGroup midiDeviceButtonGroup = new ButtonGroup();
 		MidiDevice.Info[] midiInfo = MidiSystem.getMidiDeviceInfo();
-		JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem( "None", true );
+		menuItem = new JRadioButtonMenuItem( "None", true );
 		menuItem.addActionListener( new MidiDeviceMenuItemListener( null ) );
 		midiDeviceButtonGroup.add( menuItem );
 		midiDeviceMenu.add( menuItem );
@@ -158,7 +162,11 @@ public class SynthesizerFrame extends JFrame {
 						try { playThread.join(); } catch( InterruptedException ie ) {}
 					}
 				}
-				player = new Player( synthesizerPanel, AudioSystem.getMixer( mixerInfo ) );
+				if( mixerInfo != null ) {
+					player = new Player( synthesizerPanel, AudioSystem.getMixer( mixerInfo ) );
+				} else {
+					player = new Player( synthesizerPanel );
+				}
 				playThread = new Thread( player );
 				playThread.start();
 			} catch( Exception exception ) {

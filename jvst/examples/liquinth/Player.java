@@ -2,6 +2,7 @@
 package jvst.examples.liquinth;
 
 import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
@@ -26,8 +27,16 @@ public class Player implements Runnable {
 		synthesizer.setSamplingRate( SAMPLING_RATE * OVERSAMPLE );
 		AudioFormat audioFormat = new AudioFormat( SAMPLING_RATE, 16, 1, true, false );
 		DataLine.Info lineInfo = new DataLine.Info( SourceDataLine.class, audioFormat, BUF_BYTES );
-		audioLine = ( SourceDataLine ) mixer.getLine( lineInfo );
+		if( mixer != null ) {
+			audioLine = ( SourceDataLine ) mixer.getLine( lineInfo );
+		} else {
+			audioLine = ( SourceDataLine ) AudioSystem.getLine( lineInfo );
+		}
 		audioLine.open( audioFormat, BUF_BYTES );
+	}
+
+	public Player( Synthesizer synth ) throws LineUnavailableException {
+		this( synth, null );
 	}
 
 	public void run() {
